@@ -1,0 +1,6 @@
+{
+  "name": "Modul Belajar Daring - SMP Negeri 1 Bengkalis",
+  "description": "Media pembelajaran daring dan manajemen nilai siswa untuk SMP Negeri 1 Bengkalis.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
