@@ -33,9 +33,13 @@
  * 
  * 5. ATURAN MOBILE (HP) PRIORITAS UTAMA:
  *    - Layar 360px - 430px harus rapi, proporsional, mudah dioperasikan dengan satu jari.
- *    - Header HP menempel, tinggi 56-64px, HANYA berisi logo/nama singkat dan ikon hamburger.
- *    - Tombol hamburger minimal 44x44px, berubah jadi ikon tutup saat menu terbuka.
- *    - Menu laci dari sisi (lebar ~85% layar) dengan latar gelap; item vertikal >= 48px, huruf >= 16px.
+ *    - ATURAN PERMANEN: Di tampilan HP, sidebar dibuka dengan tombol pegangan di tepi kiri tengah layar; tidak ada tombol hamburger di header HP.
+ *    - Header HP menempel, tinggi 56-64px, HANYA berisi logo dan nama singkat (tanpa tombol apa pun).
+ *    - Tombol pegangan: ukuran tampil 30px x 120px menempel tepi kiri tengah layar, area sentuh minimal 44px, isi 3 elemen vertikal (garis aksen, ikon 3 garis, garis aksen tanpa teks).
+ *    - Saat laci terbuka, tombol pegangan bergeser keluar ke kiri sambil memudar; saat laci tertutup sempurna, tombol kembali masuk.
+ *    - Area isi halaman di HP diberi jarak kiri sekitar 38px agar tidak tertutup tombol pegangan.
+ *    - Menu laci dari sisi (lebar ~78% layar, maks 320px) dengan lapisan gelap toska transparan; item vertikal >= 48px, huruf >= 16px.
+ *    - Menutup otomatis saat mengetuk lapisan gelap, Escape, memilih item, berpindah halaman, atau menggeser laci ke kiri.
  *    - Dialog tampil sebagai panel dari bawah (bottom sheet) atau modal responsif.
  *    - Tidak ada elemen yang overflow mendatar / membuat gulir samping pada halaman.
  *    - Tabel berubah menjadi kartu bertumpuk pada layar HP.
