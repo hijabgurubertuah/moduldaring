@@ -18,36 +18,28 @@
  * 3. HANYA TEKS BERIKUT YANG BOLEH TAMPIL:
  *    a. Konten asli aplikasi (isi materi, nama siswa, data nilai).
  *    b. Judul halaman dan judul bagian (satu frasa singkat).
- *    c. Label tombol dan menu (kata kerja singkat 1-3 kata: "Simpan", "Tambah Siswa", "Batal", "Hapus").
+ *    c. Label tombol dan menu (kata kerja singkat 1-3 kata: "Simpan", "Tambah Siswa", "Batal", "Hapus", "Mundur", "Lanjut", "Selesai").
  *    d. Label kolom isian (satu frasa singkat, tetap tampil di atas kolom, tanda * untuk wajib).
  *    e. Pesan kesalahan validasi (hanya saat terjadi kesalahan).
  *    f. Notifikasi singkat hasil aksi ("Berhasil disimpan", "Gagal mengunggah") dan lencana status koneksi singkat ("Offline").
  *    g. Judul singkat keadaan kosong ("Belum ada data", "Belum ada materi", "Belum ada nilai") tanpa kalimat penjelasan.
  * 
- * 4. ATURAN INPUT & GAMBAR:
- *    - Placeholder input dikosongkan atau hanya contoh isi murni (bukan instruksi).
- *    - Setiap kolom gambar selalu punya tombol "Hapus Gambar" berikon tempat sampah di samping pratinjau.
- *    - Logo, banner, dan gambar popup bisa diganti dan dihapus.
- *    - Tidak ada gambar bawaan yang tertulis mati di komponen; semua dari data pengaturan CMS.
- *    - Saat gambar/video/PDF memuat atau gagal, tampilkan kerangka abu netral tanpa teks galat.
- * 
- * 5. ATURAN MOBILE (HP) PRIORITAS UTAMA:
+ * 4. ATURAN MOBILE (HP) PRIORITAS UTAMA:
  *    - Layar 360px - 430px harus rapi, proporsional, mudah dioperasikan dengan satu jari.
- *    - ATURAN PERMANEN: Di tampilan HP, sidebar dibuka dengan tombol pegangan di tepi kiri tengah layar; tidak ada tombol hamburger di header HP.
- *    - Header HP menempel, tinggi 56-64px, HANYA berisi logo dan nama singkat (tanpa tombol apa pun).
- *    - Tombol pegangan: ukuran tampil 30px x 120px menempel tepi kiri tengah layar, area sentuh minimal 44px, isi 3 elemen vertikal (garis aksen, ikon 3 garis, garis aksen tanpa teks).
- *    - Saat laci terbuka, tombol pegangan bergeser keluar ke kiri sambil memudar; saat laci tertutup sempurna, tombol kembali masuk.
- *    - Area isi halaman di HP diberi jarak kiri sekitar 38px agar tidak tertutup tombol pegangan.
- *    - Menu laci dari sisi (lebar ~78% layar, maks 320px) dengan lapisan gelap toska transparan; item vertikal >= 48px, huruf >= 16px.
- *    - Menutup otomatis saat mengetuk lapisan gelap, Escape, memilih item, berpindah halaman, atau menggeser laci ke kiri.
- *    - Dialog tampil sebagai panel dari bawah (bottom sheet) atau modal responsif.
- *    - Tidak ada elemen yang overflow mendatar / membuat gulir samping pada halaman.
- *    - Tabel berubah menjadi kartu bertumpuk pada layar HP.
+ *    - ATURAN PERMANEN HEADER: Header HP di Ruang Belajar Siswa DIHAPUS TOTAL. Header HP di Panel Admin tetap ada (hanya logo dan nama singkat tanpa tombol).
+ *    - ATURAN PERMANEN TOMBOL SIDEBAR: Di tampilan HP, sidebar dibuka dengan tombol pegangan di tepi kiri tengah layar berukuran 25px x 120px, hampir transparan (rgba(15,118,110,0.12), blur ringan, opasitas garis/ikon ~50%, disentuh ~85%), area sentuh sama dengan ukuran tampil (25px x 120px). Tombol DIABAIKAN dalam penentuan tata letak (tidak ada jarak kiri tambahan pada isi).
+ *    - Jarak tepi kiri dan kanan kartu isi dan baris tab tipis: sekitar 8px di HP. Padding dalam kartu isi sekitar 14px.
+ *    - TAB HALAMAN ANGKA: Tab halaman hanya berupa angka (1, 2, 3...) tanpa judul, rata tengah, tidak pernah digeser mendatar (turun ke baris baru jika banyak). Tab aktif lebih lebar (~1.6x) dan toska lebih terang. Jarak tab ke kartu isi dekat (~6px).
+ *    - JENIS HALAMAN: Materi (dengan Uji Pemahaman opsional di bawah, tanpa tombol), Game (HTML responsif terisolasi ~75% viewport), dan Kuis Akhir (CBT dengan tombol Mundur, Lanjut/Selesai, dan grid 6 kolom nomor soal).
+ *    - PENILAIAN OTOMATIS: Nilai dihitung otomatis per materi dari Uji Pemahaman dan Kuis Akhir, lalu direkap otomatis ke spreadsheet tab "Rekap Nilai".
+ *    - EDITOR MATERI ADMIN: Menggunakan antarmuka yang identik dengan tampilan siswa, dengan toolbar kontrol di atas bingkai dan tombol Simpan Perubahan per halaman di dasar bingkai.
  */
 
 export const DESIGN_RULES = {
   MIN_TOUCH_TARGET: 44,
   HEADER_HEIGHT_MOBILE: 60,
+  HANDLE_WIDTH_MOBILE: 25,
+  HANDLE_HEIGHT_MOBILE: 120,
   FONT_DISPLAY: "'Plus Jakarta Sans', sans-serif",
   FONT_BODY: "'Inter', sans-serif",
   THEME_COLORS: {

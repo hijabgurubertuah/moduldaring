@@ -44,7 +44,6 @@ export const MobileSidebarDrawer: React.FC<MobileSidebarDrawerProps> = ({
       return () => {
         document.body.style.overflow = '';
         window.scrollTo(0, scrollY);
-        // Return focus to trigger button
         setTimeout(() => {
           triggerRef.current?.focus();
         }, 50);
@@ -90,7 +89,7 @@ export const MobileSidebarDrawer: React.FC<MobileSidebarDrawerProps> = ({
     if (!isDragging) return;
     setIsDragging(false);
 
-    const drawerWidth = drawerRef.current?.offsetWidth || 280;
+    const drawerWidth = drawerRef.current?.offsetWidth || 260;
     const deltaX = lastTouchX.current - touchStartX.current;
     const deltaTime = Date.now() - touchStartTime.current;
     const velocity = Math.abs(deltaX) / (deltaTime || 1);
@@ -114,7 +113,7 @@ export const MobileSidebarDrawer: React.FC<MobileSidebarDrawerProps> = ({
     if (isDragging) {
       drawerTransform = `translateX(${dragOffset}px)`;
       drawerTransition = 'none';
-      const drawerWidth = drawerRef.current?.offsetWidth || 280;
+      const drawerWidth = drawerRef.current?.offsetWidth || 260;
       backdropOpacity = Math.max(0, Math.min(1, (drawerWidth + dragOffset) / drawerWidth));
     } else {
       drawerTransform = isOpen ? 'translateX(0)' : 'translateX(-100%)';
@@ -126,14 +125,14 @@ export const MobileSidebarDrawer: React.FC<MobileSidebarDrawerProps> = ({
 
   return (
     <>
-      {/* --- HANDLE BUTTON (TOMBOL PEGANGAN 30px x 120px) --- */}
+      {/* --- TOMBOL PEGANGAN SIDEBAR HP (25px x 120px, HAMPIR TRANSPARAN) --- */}
       <button
         ref={triggerRef}
         type="button"
         onClick={onOpen}
         aria-label="Buka menu"
         aria-expanded={isOpen}
-        className={`md:hidden fixed top-1/2 -translate-y-1/2 z-30 select-none cursor-pointer group focus:outline-none focus-visible:ring-2 focus-visible:ring-[#2DD4BF] ${
+        className={`md:hidden fixed top-1/2 -translate-y-1/2 z-30 select-none cursor-pointer focus:outline-none focus-visible:ring-1 focus-visible:ring-[#2DD4BF] ${
           isOpen
             ? '-translate-x-full opacity-0 pointer-events-none'
             : 'translate-x-0 opacity-100 pointer-events-auto'
@@ -142,28 +141,27 @@ export const MobileSidebarDrawer: React.FC<MobileSidebarDrawerProps> = ({
         } ease-[cubic-bezier(0.4,0,0.2,1)]`}
         style={{
           left: 'env(safe-area-inset-left, 0px)',
-          width: '48px', // Expanded touch hitbox >= 44px
+          width: '25px', // Exact display size
           height: '120px',
         }}
       >
-        {/* Visible 30px x 120px Glass Handle Body */}
-        <div className="w-[30px] h-[120px] bg-[#0F766E]/55 backdrop-blur-[12px] rounded-r-[16px] border-t border-r border-b border-white/[0.18] border-l-0 shadow-lg shadow-black/25 flex flex-col items-center justify-between py-3 transition-transform duration-150 active:scale-[0.96] group-active:bg-[#0F766E]/70">
-          {/* Top vertical accent line (22px, 2px thick, rounded, #2DD4BF) */}
-          <div className="w-[2px] h-[22px] bg-[#2DD4BF] rounded-full shrink-0" />
+        <div className="w-[25px] h-[120px] bg-[#0F766E]/12 backdrop-blur-[4px] rounded-r-[14px] border-t border-r border-b border-white/[0.08] border-l-0 shadow-md shadow-black/10 flex flex-col items-center justify-between py-3 transition-all duration-150 active:bg-[#0F766E]/40 active:scale-[0.96] hover:bg-[#0F766E]/25">
+          {/* Top vertical accent line (22px, 2px, #2DD4BF ~50% opacity) */}
+          <div className="w-[2px] h-[22px] bg-[#2DD4BF]/50 rounded-full shrink-0" />
 
-          {/* Middle 3-line hamburger icon (18px, #ECFEFF) */}
-          <div className="w-[18px] flex flex-col justify-center items-center gap-[3px] py-1">
-            <span className="w-[18px] h-[2px] bg-[#ECFEFF] rounded-full block" />
-            <span className="w-[18px] h-[2px] bg-[#ECFEFF] rounded-full block" />
-            <span className="w-[18px] h-[2px] bg-[#ECFEFF] rounded-full block" />
+          {/* Middle 3-line hamburger icon (14px, #ECFEFF ~50% opacity) */}
+          <div className="w-[14px] flex flex-col justify-center items-center gap-[3px] py-1 opacity-50">
+            <span className="w-[14px] h-[2px] bg-[#ECFEFF] rounded-full block" />
+            <span className="w-[14px] h-[2px] bg-[#ECFEFF] rounded-full block" />
+            <span className="w-[14px] h-[2px] bg-[#ECFEFF] rounded-full block" />
           </div>
 
-          {/* Bottom vertical accent line (22px, 2px thick, rounded, #2DD4BF) */}
-          <div className="w-[2px] h-[22px] bg-[#2DD4BF] rounded-full shrink-0" />
+          {/* Bottom vertical accent line (22px, 2px, #2DD4BF ~50% opacity) */}
+          <div className="w-[2px] h-[22px] bg-[#2DD4BF]/50 rounded-full shrink-0" />
         </div>
       </button>
 
-      {/* --- BACKDROP --- */}
+      {/* --- BACKDROP (Lapisan gelap toska transparan dengan blur ringan ~6px) --- */}
       <div
         className={`md:hidden fixed inset-0 z-40 bg-[#042F2E]/55 backdrop-blur-[6px] transition-opacity ${
           prefersReducedMotion ? 'duration-150' : isOpen ? 'duration-300' : 'duration-[240ms]'
@@ -173,18 +171,18 @@ export const MobileSidebarDrawer: React.FC<MobileSidebarDrawerProps> = ({
         aria-hidden="true"
       />
 
-      {/* --- DRAWER (Mobile: 78vw, max 320px) --- */}
+      {/* --- DRAWER (Mobile: 72vw, max 280px) --- */}
       <div
         ref={drawerRef}
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
-        className={`md:hidden fixed top-0 left-0 z-40 h-screen w-[78vw] max-w-[320px] bg-[#0F766E]/50 backdrop-blur-[var(--glass-blur,18px)] border-r border-white/15 flex flex-col justify-between p-4 shadow-2xl`}
+        className={`md:hidden fixed top-0 left-0 z-40 h-screen w-[72vw] max-w-[280px] bg-[#0F766E]/50 backdrop-blur-[var(--glass-blur,18px)] border-r border-white/15 flex flex-col justify-between p-3.5 shadow-2xl`}
         style={{
           transform: drawerTransform,
           transition: drawerTransition,
-          paddingLeft: 'max(1rem, env(safe-area-inset-left))',
-          paddingBottom: 'max(1rem, env(safe-area-inset-bottom))',
+          paddingLeft: 'max(0.875rem, env(safe-area-inset-left))',
+          paddingBottom: 'max(0.875rem, env(safe-area-inset-bottom))',
         }}
         role="dialog"
         aria-modal="true"

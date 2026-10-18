@@ -261,23 +261,7 @@ export const StudentSpace: React.FC<StudentSpaceProps> = ({ student, cms, onLogo
 
   return (
     <div className="min-h-screen flex flex-col md:flex-row text-[#ECFEFF] selection:bg-[#2DD4BF] selection:text-[#042F2E]">
-      {/* --- HP STICKY HEADER (56-64px, HANYA berisi logo dan nama singkat, TANPA tombol apa pun) --- */}
-      <header className="md:hidden sticky top-0 z-20 h-[60px] bg-[#042F2E]/80 backdrop-blur-md border-b border-white/10 px-4 flex items-center">
-        <div className="flex items-center gap-2.5 min-w-0">
-          <img
-            src={logoUrl}
-            alt=""
-            referrerPolicy="no-referrer"
-            className="w-8 h-8 object-contain shrink-0"
-            onError={(e) => {
-              (e.target as HTMLElement).style.display = 'none';
-            }}
-          />
-          <span className="font-bold text-sm text-[#ECFEFF] truncate">
-            {cms.shortName}
-          </span>
-        </div>
-      </header>
+      {/* ATURAN PERMANEN: Header HP di Ruang Belajar Siswa DIHAPUS TOTAL */}
 
       {/* --- MOBILE SIDEBAR DRAWER DENGAN TOMBOL PEGANGAN DI KIRI TENGAH LAYAR --- */}
       <MobileSidebarDrawer
@@ -288,19 +272,20 @@ export const StudentSpace: React.FC<StudentSpaceProps> = ({ student, cms, onLogo
         {renderSidebarContent()}
       </MobileSidebarDrawer>
 
-      {/* --- SIDEBAR DESKTOP (Tampilan desktop tidak berubah) --- */}
+      {/* --- SIDEBAR DESKTOP --- */}
       <aside className="hidden md:flex sticky top-0 left-0 z-10 h-screen w-[300px] bg-[#0F766E]/40 backdrop-blur-[var(--glass-blur,18px)] border-r border-white/15 flex-col justify-between p-4 shrink-0">
         {renderSidebarContent()}
       </aside>
 
-      {/* --- MAIN LEARNING AREA (Di HP diberi jarak kiri 38px agar tidak tertutup tombol pegangan) --- */}
-      <main className="flex-1 pl-[38px] pr-4 py-4 sm:p-6 md:p-8 overflow-y-auto">
+      {/* --- MAIN LEARNING AREA (Tombol pegangan diabaikan dalam penentuan tata letak, seimbang kiri-kanan ~8px di HP) --- */}
+      <main className="flex-1 px-2 py-3 sm:px-4 sm:py-6 md:p-8 overflow-y-auto">
         {activeTab === 'materi' ? (
           activeMaterial ? (
             <MaterialViewer
               material={activeMaterial}
               initialPageId={activePageId}
               cms={cms}
+              studentNisn={student.nisn}
               onPageChange={handlePageChange}
             />
           ) : (
@@ -310,10 +295,10 @@ export const StudentSpace: React.FC<StudentSpaceProps> = ({ student, cms, onLogo
           )
         ) : (
           <StudentGrades
-            grades={grades}
+            grades={storage.getGradesForStudent(student.nisn)}
             cms={cms}
             gradeSettings={gradeSettings}
-            materialProgressPercent={progressPercent}
+            totalMaterialsForClass={studentMaterials.length}
           />
         )}
       </main>

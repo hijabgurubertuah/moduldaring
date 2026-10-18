@@ -1,6 +1,15 @@
 // ATURAN BAKU: lihat designSystem. UI harus selalu minimalis, bersih, dan tanpa teks petunjuk.
 
-import { Student, Material, GradeRecord, GradeSettings, CmsSettings, SyncSettings, ActivityLog } from '../types';
+import {
+  Student,
+  Material,
+  GradeRecord,
+  GradeSettings,
+  CmsSettings,
+  SyncSettings,
+  ActivityLog,
+  QuestionItem,
+} from '../types';
 
 export const INITIAL_STUDENTS: Student[] = [
   // Kelas VII A
@@ -36,6 +45,113 @@ export const INITIAL_STUDENTS: Student[] = [
   { id: 'std-24', name: 'Ilham Saputra', nisn: '0123456724', className: 'IX A' },
 ];
 
+// Interactive Game HTML for Matematika
+const MATH_GAME_HTML = `<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  body {
+    margin: 0;
+    padding: 16px;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: #042F2E;
+    color: #ECFEFF;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    box-sizing: border-box;
+  }
+  .card {
+    background: rgba(15, 118, 110, 0.4);
+    border: 1px solid rgba(255,255,255,0.2);
+    border-radius: 16px;
+    padding: 24px;
+    text-align: center;
+    max-width: 380px;
+    width: 100%;
+    box-sizing: border-box;
+  }
+  .question {
+    font-size: 28px;
+    font-weight: bold;
+    color: #2DD4BF;
+    margin: 16px 0;
+  }
+  .grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-top: 20px;
+  }
+  button {
+    background: rgba(255,255,255,0.12);
+    border: 1px solid rgba(255,255,255,0.2);
+    color: #ECFEFF;
+    padding: 14px;
+    font-size: 18px;
+    font-weight: bold;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  button:hover {
+    background: rgba(45, 212, 191, 0.4);
+  }
+  .score {
+    font-size: 14px;
+    color: #A5D8D3;
+  }
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="score" id="score">Skor: 0</div>
+  <div class="question" id="problem">(-7) + 12 = ?</div>
+  <div class="grid" id="options"></div>
+</div>
+<script>
+  let score = 0;
+  let correct = 5;
+  function nextProblem() {
+    const a = Math.floor(Math.random() * 20) - 10;
+    const b = Math.floor(Math.random() * 20) - 10;
+    const isPlus = Math.random() > 0.5;
+    correct = isPlus ? a + b : a - b;
+    const op = isPlus ? '+' : '-';
+    document.getElementById('problem').textContent = '(' + a + ') ' + op + ' (' + b + ') = ?';
+    document.getElementById('score').textContent = 'Skor: ' + score;
+    const answers = [correct];
+    while(answers.length < 4) {
+      const wrong = correct + (Math.floor(Math.random() * 11) - 5);
+      if(!answers.includes(wrong)) answers.push(wrong);
+    }
+    answers.sort(() => Math.random() - 0.5);
+    const container = document.getElementById('options');
+    container.innerHTML = '';
+    answers.forEach(ans => {
+      const btn = document.createElement('button');
+      btn.textContent = ans;
+      btn.onclick = () => {
+        if(ans === correct) {
+          score += 10;
+          btn.style.background = '#34D399';
+        } else {
+          btn.style.background = '#EF4444';
+        }
+        setTimeout(nextProblem, 500);
+      };
+      container.appendChild(btn);
+    });
+  }
+  nextProblem();
+</script>
+</body>
+</html>`;
+
 export const INITIAL_MATERIALS: Material[] = [
   {
     id: 'mat-01',
@@ -47,7 +163,7 @@ export const INITIAL_MATERIALS: Material[] = [
     pages: [
       {
         id: 'p-01',
-        title: 'Pengertian',
+        type: 'materi',
         blocks: [
           {
             id: 'b-01',
@@ -62,7 +178,8 @@ export const INITIAL_MATERIALS: Material[] = [
             type: 'text',
             text: {
               style: 'paragraph',
-              content: 'Bilangan bulat adalah himpunan bilangan yang terdiri atas bilangan bulat negatif, bilangan nol, dan bilangan bulat positif. Pada garis bilangan horizontal, bilangan nol berada di titik tengah. Bilangan positif terletak di sebelah kanan nol, sedangkan bilangan negatif terletak di sebelah kiri nol.',
+              content:
+                'Bilangan bulat adalah himpunan bilangan yang terdiri atas bilangan bulat negatif, bilangan nol, dan bilangan bulat positif. Pada garis bilangan horizontal, bilangan nol berada di titik tengah. Bilangan positif terletak di sebelah kanan nol, sedangkan bilangan negatif terletak di sebelah kiri nol.',
             },
           },
           {
@@ -70,14 +187,27 @@ export const INITIAL_MATERIALS: Material[] = [
             type: 'text',
             text: {
               style: 'paragraph',
-              content: 'Semakin ke kanan letak suatu bilangan pada garis bilangan, maka nilainya semakin besar. Sebaliknya, semakin ke kiri letak suatu bilangan, nilainya semakin kecil. Pemahaman garis bilangan ini menjadi dasar utama dalam mempelajari operasi hitung penjumlahan dan pengurangan.',
+              content:
+                'Semakin ke kanan letak suatu bilangan pada garis bilangan, maka nilainya semakin besar. Sebaliknya, semakin ke kiri letak suatu bilangan, nilainya semakin kecil. Pemahaman garis bilangan ini menjadi dasar utama dalam mempelajari operasi hitung penjumlahan dan pengurangan.',
             },
           },
         ],
+        question: {
+          id: 'q-01',
+          question: 'Manakah pernyataan yang benar mengenai posisi bilangan pada garis bilangan horizontal?',
+          options: [
+            { id: 'opt-1a', label: 'A', text: 'Semakin ke kiri nilainya semakin besar' },
+            { id: 'opt-1b', label: 'B', text: 'Semakin ke kanan nilainya semakin besar' },
+            { id: 'opt-1c', label: 'C', text: 'Bilangan negatif berada di sebelah kanan nol' },
+            { id: 'opt-1d', label: 'D', text: 'Bilangan nol nilainya lebih kecil dari semua bilangan negatif' },
+          ],
+          correctOptionId: 'opt-1b',
+          delaySeconds: 5,
+        },
       },
       {
         id: 'p-02',
-        title: 'Operasi Jumlah & Kurang',
+        type: 'materi',
         blocks: [
           {
             id: 'b-04',
@@ -92,7 +222,8 @@ export const INITIAL_MATERIALS: Material[] = [
             type: 'text',
             text: {
               style: 'paragraph',
-              content: 'Penjumlahan dua bilangan bertanda sama dilakukan dengan menjumlahkan kedua nilai mutlaknya lalu memberikan tanda yang sama dengan kedua bilangan tersebut. Sebagai contoh, (-5) + (-7) = -12.',
+              content:
+                'Penjumlahan dua bilangan bertanda sama dilakukan dengan menjumlahkan kedua nilai mutlaknya lalu memberikan tanda yang sama dengan kedua bilangan tersebut. Sebagai contoh, (-5) + (-7) = -12.',
             },
           },
           {
@@ -100,14 +231,27 @@ export const INITIAL_MATERIALS: Material[] = [
             type: 'text',
             text: {
               style: 'paragraph',
-              content: 'Apabila tanda kedua bilangan berbeda, kurangkan nilai mutlak yang lebih besar dengan nilai mutlak yang lebih kecil, lalu ikuti tanda dari bilangan yang memiliki nilai mutlak lebih besar. Misalnya: 15 + (-8) = 7, sedangkan (-15) + 8 = -7.',
+              content:
+                'Apabila tanda kedua bilangan berbeda, kurangkan nilai mutlak yang lebih besar dengan nilai mutlak yang lebih kecil, lalu ikuti tanda dari bilangan yang memiliki nilai mutlak lebih besar. Misalnya: 15 + (-8) = 7, sedangkan (-15) + 8 = -7.',
             },
           },
         ],
+        question: {
+          id: 'q-02',
+          question: 'Berapakah hasil dari (-18) + 25?',
+          options: [
+            { id: 'opt-2a', label: 'A', text: '-7' },
+            { id: 'opt-2b', label: 'B', text: '7' },
+            { id: 'opt-2c', label: 'C', text: '43' },
+            { id: 'opt-2d', label: 'D', text: '-43' },
+          ],
+          correctOptionId: 'opt-2b',
+          delaySeconds: 10,
+        },
       },
       {
         id: 'p-03',
-        title: 'Kali & Bagi',
+        type: 'materi',
         blocks: [
           {
             id: 'b-07',
@@ -122,7 +266,8 @@ export const INITIAL_MATERIALS: Material[] = [
             type: 'text',
             text: {
               style: 'paragraph',
-              content: 'Perkalian dan pembagian dua bilangan bulat mengikuti kaidah tanda yang konsisten. Perkalian dua bilangan bertanda sama selalu menghasilkan bilangan positif, sedangkan perkalian dua bilangan berbeda tanda selalu menghasilkan bilangan negatif.',
+              content:
+                'Perkalian dan pembagian dua bilangan bulat mengikuti kaidah tanda yang konsisten. Perkalian dua bilangan bertanda sama selalu menghasilkan bilangan positif, sedangkan perkalian dua bilangan berbeda tanda selalu menghasilkan bilangan negatif.',
             },
           },
           {
@@ -139,56 +284,138 @@ export const INITIAL_MATERIALS: Material[] = [
             },
           },
         ],
+        question: {
+          id: 'q-03',
+          question: 'Berapakah hasil dari (-8) × (-9)?',
+          options: [
+            { id: 'opt-3a', label: 'A', text: '-72' },
+            { id: 'opt-3b', label: 'B', text: '72' },
+            { id: 'opt-3c', label: 'C', text: '-17' },
+            { id: 'opt-3d', label: 'D', text: '17' },
+          ],
+          correctOptionId: 'opt-3b',
+          delaySeconds: 15,
+        },
       },
       {
         id: 'p-04',
-        title: 'Contoh Soal',
-        blocks: [
-          {
-            id: 'b-10',
-            type: 'text',
-            text: {
-              style: 'heading',
-              content: 'Penyelesaian Kasus Nyata',
-            },
-          },
-          {
-            id: 'b-11',
-            type: 'text',
-            text: {
-              style: 'paragraph',
-              content: 'Suhu di dalam lemari pendingin mula-mula adalah -4°C. Ketika aliran listrik padam selama dua jam, suhu di dalam lemari pendingin naik sebesar 9°C. Berapakah suhu lemari pendingin sekarang?',
-            },
-          },
-          {
-            id: 'b-12',
-            type: 'text',
-            text: {
-              style: 'quote',
-              content: 'Penyelesaian: Suhu awal = -4°C. Kenaikan suhu = +9°C. Suhu akhir = (-4) + 9 = 5°C.',
-            },
-          },
-        ],
+        type: 'game',
+        gameHtml: MATH_GAME_HTML,
       },
       {
         id: 'p-05',
-        title: 'Rangkuman',
-        blocks: [
+        type: 'kuis_akhir',
+        maxAttempts: 0,
+        quizQuestions: [
           {
-            id: 'b-13',
-            type: 'text',
-            text: {
-              style: 'heading',
-              content: 'Rangkuman Materi',
-            },
+            id: 'qk-01',
+            question: 'Hasil dari 12 + (-25) adalah...',
+            options: [
+              { id: 'qk-1a', label: 'A', text: '-13' },
+              { id: 'qk-1b', label: 'B', text: '13' },
+              { id: 'qk-1c', label: 'C', text: '-37' },
+              { id: 'qk-1d', label: 'D', text: '37' },
+            ],
+            correctOptionId: 'qk-1a',
           },
           {
-            id: 'b-14',
-            type: 'text',
-            text: {
-              style: 'paragraph',
-              content: 'Operasi campuran bilangan bulat selalu mengutamakan tanda kurung terlebih dahulu, diikuti perkalian dan pembagian dari kiri ke kanan, dan diakhiri dengan penjumlahan dan pengurangan. Ketelitian tanda adalah kunci utama dalam memperoleh hasil yang akurat.',
-            },
+            id: 'qk-02',
+            question: 'Hasil dari (-15) - (-8) adalah...',
+            options: [
+              { id: 'qk-2a', label: 'A', text: '-23' },
+              { id: 'qk-2b', label: 'B', text: '-7' },
+              { id: 'qk-2c', label: 'C', text: '7' },
+              { id: 'qk-2d', label: 'D', text: '23' },
+            ],
+            correctOptionId: 'qk-2b',
+          },
+          {
+            id: 'qk-03',
+            question: 'Nilai dari (-6) × 7 adalah...',
+            options: [
+              { id: 'qk-3a', label: 'A', text: '-42' },
+              { id: 'qk-3b', label: 'B', text: '42' },
+              { id: 'qk-3c', label: 'C', text: '-1' },
+              { id: 'qk-3d', label: 'D', text: '13' },
+            ],
+            correctOptionId: 'qk-3a',
+          },
+          {
+            id: 'qk-04',
+            question: 'Hasil dari (-56) ÷ (-8) adalah...',
+            options: [
+              { id: 'qk-4a', label: 'A', text: '-7' },
+              { id: 'qk-4b', label: 'B', text: '7' },
+              { id: 'qk-4c', label: 'C', text: '-64' },
+              { id: 'qk-4d', label: 'D', text: '48' },
+            ],
+            correctOptionId: 'qk-4b',
+          },
+          {
+            id: 'qk-05',
+            question: 'Suhu mula-mula -3°C lalu naik 8°C. Suhu sekarang adalah...',
+            options: [
+              { id: 'qk-5a', label: 'A', text: '11°C' },
+              { id: 'qk-5b', label: 'B', text: '5°C' },
+              { id: 'qk-5c', label: 'C', text: '-5°C' },
+              { id: 'qk-5d', label: 'D', text: '-11°C' },
+            ],
+            correctOptionId: 'qk-5b',
+          },
+          {
+            id: 'qk-06',
+            question: 'Hasil dari 15 + (-3) × 4 adalah...',
+            options: [
+              { id: 'qk-6a', label: 'A', text: '48' },
+              { id: 'qk-6b', label: 'B', text: '3' },
+              { id: 'qk-6c', label: 'C', text: '-3' },
+              { id: 'qk-6d', label: 'D', text: '27' },
+            ],
+            correctOptionId: 'qk-6b',
+          },
+          {
+            id: 'qk-07',
+            question: 'Urutan bilangan -4, 2, -8, 0, 5 dari yang terkecil adalah...',
+            options: [
+              { id: 'qk-7a', label: 'A', text: '-8, -4, 0, 2, 5' },
+              { id: 'qk-7b', label: 'B', text: '5, 2, 0, -4, -8' },
+              { id: 'qk-7c', label: 'C', text: '0, -4, -8, 2, 5' },
+              { id: 'qk-7d', label: 'D', text: '-4, -8, 0, 2, 5' },
+            ],
+            correctOptionId: 'qk-7a',
+          },
+          {
+            id: 'qk-08',
+            question: 'Pernyataan berikut yang benar adalah...',
+            options: [
+              { id: 'qk-8a', label: 'A', text: '-12 > -5' },
+              { id: 'qk-8b', label: 'B', text: '-10 < -15' },
+              { id: 'qk-8c', label: 'C', text: '-7 < 2' },
+              { id: 'qk-8d', label: 'D', text: '0 < -3' },
+            ],
+            correctOptionId: 'qk-8c',
+          },
+          {
+            id: 'qk-09',
+            question: 'Hasil dari [(-10) + 4] ÷ (-3) adalah...',
+            options: [
+              { id: 'qk-9a', label: 'A', text: '-2' },
+              { id: 'qk-9b', label: 'B', text: '2' },
+              { id: 'qk-9c', label: 'C', text: '-6' },
+              { id: 'qk-9d', label: 'D', text: '6' },
+            ],
+            correctOptionId: 'qk-9b',
+          },
+          {
+            id: 'qk-10',
+            question: 'Sebuah kapal selam berada di kedalaman 120 m. Jika naik 45 m, posisi kapal sekarang adalah...',
+            options: [
+              { id: 'qk-10a', label: 'A', text: '-165 m' },
+              { id: 'qk-10b', label: 'B', text: '-75 m' },
+              { id: 'qk-10c', label: 'C', text: '75 m' },
+              { id: 'qk-10d', label: 'D', text: '165 m' },
+            ],
+            correctOptionId: 'qk-10b',
           },
         ],
       },
@@ -204,7 +431,7 @@ export const INITIAL_MATERIALS: Material[] = [
     pages: [
       {
         id: 'p-06',
-        title: 'Ciri Kehidupan',
+        type: 'materi',
         blocks: [
           {
             id: 'b-15',
@@ -219,22 +446,27 @@ export const INITIAL_MATERIALS: Material[] = [
             type: 'text',
             text: {
               style: 'paragraph',
-              content: 'Semua makhluk hidup memiliki karakteristik pembeda dari benda tak hidup. Ciri-ciri tersebut meliputi bernapas, memerlukan nutrisi, bergerak, peka terhadap rangsang (iritabilitas), tumbuh dan berkembang, berkembang biak, serta mampu menyesuaikan diri dengan lingkungan.',
-            },
-          },
-          {
-            id: 'b-17',
-            type: 'text',
-            text: {
-              style: 'paragraph',
-              content: 'Klasifikasi makhluk hidup bertujuan untuk mempermudah mengenali, membandingkan, dan mempelajari keanekaragaman hayati yang sangat melimpah di bumi.',
+              content:
+                'Semua makhluk hidup memiliki karakteristik pembeda dari benda tak hidup. Ciri-ciri tersebut meliputi bernapas, memerlukan nutrisi, bergerak, peka terhadap rangsang (iritabilitas), tumbuh dan berkembang, berkembang biak, serta mampu menyesuaikan diri dengan lingkungan.',
             },
           },
         ],
+        question: {
+          id: 'q-ipa-1',
+          question: 'Kemampuan makhluk hidup dalam menanggapi rangsangan dari luar disebut...',
+          options: [
+            { id: 'opt-ipa-1a', label: 'A', text: 'Adaptasi' },
+            { id: 'opt-ipa-1b', label: 'B', text: 'Iritabilitas' },
+            { id: 'opt-ipa-1c', label: 'C', text: 'Reproduksi' },
+            { id: 'opt-ipa-1d', label: 'D', text: 'Respirasi' },
+          ],
+          correctOptionId: 'opt-ipa-1b',
+          delaySeconds: 10,
+        },
       },
       {
         id: 'p-07',
-        title: 'Sistem Lima Kingdom',
+        type: 'materi',
         blocks: [
           {
             id: 'b-18',
@@ -249,28 +481,34 @@ export const INITIAL_MATERIALS: Material[] = [
             type: 'text',
             text: {
               style: 'paragraph',
-              content: 'Robert H. Whittaker mengelompokkan makhluk hidup ke dalam lima kerajaan (kingdom): Monera, Protista, Fungi (Jamur), Plantae (Tumbuhan), dan Animalia (Hewan). Setiap kelompok memiliki tingkatan organisasi seluler serta pola perolehan energi yang khas.',
-            },
-          },
-          {
-            id: 'b-20',
-            type: 'video',
-            video: {
-              youtubeUrl: 'https://www.youtube.com/watch?v=F38BmgPcZ_I',
+              content:
+                'Robert H. Whittaker mengelompokkan makhluk hidup ke dalam lima kerajaan: Monera, Protista, Fungi (Jamur), Plantae (Tumbuhan), dan Animalia (Hewan).',
             },
           },
         ],
+        question: {
+          id: 'q-ipa-2',
+          question: 'Kingdom yang mencakup organisme prokariotik seperti bakteri adalah...',
+          options: [
+            { id: 'opt-ipa-2a', label: 'A', text: 'Monera' },
+            { id: 'opt-ipa-2b', label: 'B', text: 'Protista' },
+            { id: 'opt-ipa-2c', label: 'C', text: 'Fungi' },
+            { id: 'opt-ipa-2d', label: 'D', text: 'Plantae' },
+          ],
+          correctOptionId: 'opt-ipa-2a',
+          delaySeconds: 10,
+        },
       },
       {
         id: 'p-08',
-        title: 'Kunci Determinasi',
+        type: 'materi',
         blocks: [
           {
             id: 'b-21',
             type: 'text',
             text: {
               style: 'heading',
-              content: 'Penggunaan Kunci Dikotomi',
+              content: 'Kunci Determinasi',
             },
           },
           {
@@ -278,8 +516,116 @@ export const INITIAL_MATERIALS: Material[] = [
             type: 'text',
             text: {
               style: 'paragraph',
-              content: 'Kunci determinasi adalah petunjuk praktis berupa daftar ciri-ciri organisme yang disusun berpasangan secara berlawanan untuk mengidentifikasi kelompok spesies tertentu hingga tingkatan taksonomi yang tepat.',
+              content:
+                'Kunci determinasi adalah petunjuk praktis berupa daftar ciri-ciri organisme yang disusun berpasangan secara berlawanan untuk mengidentifikasi kelompok taksonomi yang tepat.',
             },
+          },
+        ],
+        question: {
+          id: 'q-ipa-3',
+          question: 'Kunci identifikasi yang terdiri atas dua pilihan ciri berlawanan pada setiap langkah dinamakan kunci...',
+          options: [
+            { id: 'opt-ipa-3a', label: 'A', text: 'Format' },
+            { id: 'opt-ipa-3b', label: 'B', text: 'Dikotomi' },
+            { id: 'opt-ipa-3c', label: 'C', text: 'Takson' },
+            { id: 'opt-ipa-3d', label: 'D', text: 'Klasik' },
+          ],
+          correctOptionId: 'opt-ipa-3b',
+          delaySeconds: 10,
+        },
+      },
+      {
+        id: 'p-09-cbt',
+        type: 'kuis_akhir',
+        maxAttempts: 0,
+        quizQuestions: [
+          {
+            id: 'q-cbt-ipa-1',
+            question: 'Ciri makhluk hidup yang berhubungan dengan pelestarian keturunan adalah...',
+            options: [
+              { id: 'cbt-1a', label: 'A', text: 'Berkembang biak' },
+              { id: 'cbt-1b', label: 'B', text: 'Bergerak' },
+              { id: 'cbt-1c', label: 'C', text: 'Bernapas' },
+              { id: 'cbt-1d', label: 'D', text: 'Memerlukan nutrisi' },
+            ],
+            correctOptionId: 'cbt-1a',
+          },
+          {
+            id: 'q-cbt-ipa-2',
+            question: 'Urutan takson tumbuhan dari tingkat tertinggi ke terendah adalah...',
+            options: [
+              { id: 'cbt-2a', label: 'A', text: 'Kingdom - Divisi - Kelas - Ordo - Famili - Genus - Spesies' },
+              { id: 'cbt-2b', label: 'B', text: 'Kingdom - Filum - Kelas - Ordo - Famili - Genus - Spesies' },
+              { id: 'cbt-2c', label: 'C', text: 'Spesies - Genus - Famili - Ordo - Kelas - Divisi - Kingdom' },
+              { id: 'cbt-2d', label: 'D', text: 'Divisi - Kingdom - Ordo - Kelas - Famili - Genus - Spesies' },
+            ],
+            correctOptionId: 'cbt-2a',
+          },
+          {
+            id: 'q-cbt-ipa-3',
+            question: 'Pemberian nama ilmiah dengan dua kata diperkenalkan oleh...',
+            options: [
+              { id: 'cbt-3a', label: 'A', text: 'Carolus Linnaeus' },
+              { id: 'cbt-3b', label: 'B', text: 'Robert Whittaker' },
+              { id: 'cbt-3c', label: 'C', text: 'Charles Darwin' },
+              { id: 'cbt-3d', label: 'D', text: 'Gregor Mendel' },
+            ],
+            correctOptionId: 'cbt-3a',
+          },
+          {
+            id: 'q-cbt-ipa-4',
+            question: 'Organisme yang tidak berklorofil dan dinding selnya tersusun dari zat kitin adalah...',
+            options: [
+              { id: 'cbt-4a', label: 'A', text: 'Fungi' },
+              { id: 'cbt-4b', label: 'B', text: 'Plantae' },
+              { id: 'cbt-4c', label: 'C', text: 'Animalia' },
+              { id: 'cbt-4d', label: 'D', text: 'Monera' },
+            ],
+            correctOptionId: 'cbt-4a',
+          },
+          {
+            id: 'q-cbt-ipa-5',
+            question: 'Contoh hewan vertebrata yang bernapas dengan insang saat dewasa adalah...',
+            options: [
+              { id: 'cbt-5a', label: 'A', text: 'Ikan mas' },
+              { id: 'cbt-5b', label: 'B', text: 'Katak sawah' },
+              { id: 'cbt-5c', label: 'C', text: 'Paus biru' },
+              { id: 'cbt-5d', label: 'D', text: 'Lumba-lumba' },
+            ],
+            correctOptionId: 'cbt-5a',
+          },
+          {
+            id: 'q-cbt-ipa-6',
+            question: 'Tumbuhan lumut dan paku berkembang biak secara generatif dengan bantuan...',
+            options: [
+              { id: 'cbt-6a', label: 'A', text: 'Spora' },
+              { id: 'cbt-6b', label: 'B', text: 'Biji terbuka' },
+              { id: 'cbt-6c', label: 'C', text: 'Bunga sejati' },
+              { id: 'cbt-6d', label: 'D', text: 'Tunas adventif' },
+            ],
+            correctOptionId: 'cbt-6a',
+          },
+          {
+            id: 'q-cbt-ipa-7',
+            question: 'Ciri khas hewan mamalia adalah...',
+            options: [
+              { id: 'cbt-7a', label: 'A', text: 'Memiliki kelenjar susu dan berambut' },
+              { id: 'cbt-7b', label: 'B', text: 'Berdarah dingin dan bersisik' },
+              { id: 'cbt-7c', label: 'C', text: 'Bertelur dan bernapas dengan pundi udara' },
+              { id: 'cbt-7d', label: 'D', text: 'Kulit selalu basah dan mengalami metamorfosis' },
+            ],
+            correctOptionId: 'cbt-7a',
+          },
+          {
+            id: 'q-cbt-ipa-8',
+            question: 'Tujuan utama klasifikasi makhluk hidup adalah...',
+            options: [
+              { id: 'cbt-8a', label: 'A', text: 'Mempermudah mengenali dan mempelajari keanekaragaman' },
+              { id: 'cbt-8b', label: 'B', text: 'Menambah spesies baru di alam' },
+              { id: 'cbt-8c', label: 'C', text: 'Memusnahkan organisme berbahaya' },
+              { id: 'cbt-8d', label: 'D', text: 'Mengubah nama lokal makhluk hidup' },
+            ],
+            correctOptionId: 'cbt-8a',
           },
         ],
       },
@@ -294,8 +640,8 @@ export const INITIAL_MATERIALS: Material[] = [
     order: 3,
     pages: [
       {
-        id: 'p-09',
-        title: 'Struktur Teks',
+        id: 'p-10',
+        type: 'materi',
         blocks: [
           {
             id: 'b-23',
@@ -310,22 +656,27 @@ export const INITIAL_MATERIALS: Material[] = [
             type: 'text',
             text: {
               style: 'paragraph',
-              content: 'Teks deskripsi adalah teks yang melukiskan suatu objek, tempat, atau peristiwa secara jelas dan terperinci sehingga pembaca seolah-olah melihat, mendengar, atau merasakan sendiri objek yang digambarkan oleh penulis.',
-            },
-          },
-          {
-            id: 'b-25',
-            type: 'text',
-            text: {
-              style: 'paragraph',
-              content: 'Struktur teks deskripsi terdiri atas identifikasi (penentu identitas objek), deskripsi bagian (klasifikasi dan rincian bagian objek), serta simpulan atau kesan umum penulis terhadap objek.',
+              content:
+                'Teks deskripsi adalah teks yang melukiskan suatu objek, tempat, atau peristiwa secara jelas dan terperinci sehingga pembaca seolah-olah melihat, mendengar, atau merasakan sendiri objek yang digambarkan oleh penulis.',
             },
           },
         ],
+        question: {
+          id: 'q-bi-1',
+          question: 'Tujuan utama penulisan teks deskripsi adalah...',
+          options: [
+            { id: 'opt-bi-1a', label: 'A', text: 'Menceritakan peristiwa sejarah' },
+            { id: 'opt-bi-1b', label: 'B', text: 'Melukiskan objek secara terperinci agar pembaca seolah melihatnya' },
+            { id: 'opt-bi-1c', label: 'C', text: 'Membujuk pembaca membeli suatu produk' },
+            { id: 'opt-bi-1d', label: 'D', text: 'Menjelaskan langkah kerja suatu alat' },
+          ],
+          correctOptionId: 'opt-bi-1b',
+          delaySeconds: 10,
+        },
       },
       {
-        id: 'p-10',
-        title: 'Unsur Kebahasaan',
+        id: 'p-11',
+        type: 'materi',
         blocks: [
           {
             id: 'b-26',
@@ -340,32 +691,23 @@ export const INITIAL_MATERIALS: Material[] = [
             type: 'text',
             text: {
               style: 'paragraph',
-              content: 'Teks deskripsi lazim menggunakan kata-kata khusus yang konkret, kalimat bermajas perbandingan, serta kata sifat yang mendeskripsikan kondisi visual, aroma, suara, atau rasa suatu tempat atau benda.',
+              content:
+                'Teks deskripsi lazim menggunakan kata-kata khusus yang konkret, kalimat bermajas perbandingan, serta kata sifat yang mendeskripsikan kondisi visual, aroma, suara, atau rasa suatu tempat atau benda.',
             },
           },
         ],
-      },
-      {
-        id: 'p-11',
-        title: 'Contoh Analisis',
-        blocks: [
-          {
-            id: 'b-28',
-            type: 'text',
-            text: {
-              style: 'heading',
-              content: 'Contoh Objek: Pantai Selat Baru',
-            },
-          },
-          {
-            id: 'b-29',
-            type: 'text',
-            text: {
-              style: 'paragraph',
-              content: 'Pantai Selat Baru di Pulau Bengkalis menyajikan hamparan pasir landai yang luas membentang. Ombak tenang berkejaran menuju tepian di bawah naungan pohon kelapa yang berderet rapi, menghadirkan semilir angin tropis yang menyejukkan hati.',
-            },
-          },
-        ],
+        question: {
+          id: 'q-bi-2',
+          question: 'Struktur pertama pada teks deskripsi yang memuat identitas umum objek adalah...',
+          options: [
+            { id: 'opt-bi-2a', label: 'A', text: 'Identifikasi' },
+            { id: 'opt-bi-2b', label: 'B', text: 'Deskripsi Bagian' },
+            { id: 'opt-bi-2c', label: 'C', text: 'Simpulan' },
+            { id: 'opt-bi-2d', label: 'D', text: 'Reorientasi' },
+          ],
+          correctOptionId: 'opt-bi-2a',
+          delaySeconds: 10,
+        },
       },
     ],
   },
@@ -379,7 +721,7 @@ export const INITIAL_MATERIALS: Material[] = [
     pages: [
       {
         id: 'p-12',
-        title: 'Definition',
+        type: 'materi',
         blocks: [
           {
             id: 'b-30',
@@ -394,54 +736,23 @@ export const INITIAL_MATERIALS: Material[] = [
             type: 'text',
             text: {
               style: 'paragraph',
-              content: 'Descriptive text is a type of text with a purpose to give information. The context of this kind of text is the description of a particular person, animal, place, or thing. It presents information in a way that appeals directly to the reader sensory awareness.',
+              content:
+                'Descriptive text is a type of text with a purpose to give information. The context of this kind of text is the description of a particular person, animal, place, or thing.',
             },
           },
         ],
-      },
-      {
-        id: 'p-13',
-        title: 'Generic Structure',
-        blocks: [
-          {
-            id: 'b-32',
-            type: 'text',
-            text: {
-              style: 'heading',
-              content: 'Structure and Language Features',
-            },
-          },
-          {
-            id: 'b-33',
-            type: 'text',
-            text: {
-              style: 'paragraph',
-              content: 'The generic structure consists of Identification (introducing the subject to be described) and Description (giving details of the characteristics, qualities, parts, or habits of the subject). It frequently utilizes Simple Present Tense and specific adjectives.',
-            },
-          },
-        ],
-      },
-      {
-        id: 'p-14',
-        title: 'Practice & Reading',
-        blocks: [
-          {
-            id: 'b-34',
-            type: 'text',
-            text: {
-              style: 'heading',
-              content: 'Reading Passage',
-            },
-          },
-          {
-            id: 'b-35',
-            type: 'text',
-            text: {
-              style: 'paragraph',
-              content: 'Bengkalis Island is a peaceful coastal region located in Riau Province. It is famous for its gentle coastal breeze, lush mangrove forests, and traditional Malay architecture with warm hospitality.',
-            },
-          },
-        ],
+        question: {
+          id: 'q-bing-1',
+          question: 'What is the generic structure of a descriptive text?',
+          options: [
+            { id: 'opt-bing-1a', label: 'A', text: 'Orientation and Complication' },
+            { id: 'opt-bing-1b', label: 'B', text: 'Identification and Description' },
+            { id: 'opt-bing-1c', label: 'C', text: 'Thesis and Arguments' },
+            { id: 'opt-bing-1d', label: 'D', text: 'Goal and Steps' },
+          ],
+          correctOptionId: 'opt-bing-1b',
+          delaySeconds: 10,
+        },
       },
     ],
   },
@@ -454,8 +765,8 @@ export const INITIAL_MATERIALS: Material[] = [
     order: 5,
     pages: [
       {
-        id: 'p-15',
-        title: 'Bentuk Keragaman',
+        id: 'p-13',
+        type: 'materi',
         blocks: [
           {
             id: 'b-36',
@@ -470,67 +781,23 @@ export const INITIAL_MATERIALS: Material[] = [
             type: 'text',
             text: {
               style: 'paragraph',
-              content: 'Indonesia memiliki keragaman suku bangsa, bahasa daerah, pakaian adat, rumah adat, tarian tradisional, serta sistem kekerabatan yang sangat kaya. Keberagaman ini terbentuk oleh letak geografis kepulauan, kondisi iklim, serta interaksi sejarah perdagangan masa lampau.',
-            },
-          },
-          {
-            id: 'b-38',
-            type: 'table',
-            table: {
-              headers: ['Daerah', 'Rumah Adat', 'Kesenian Khas'],
-              rows: [
-                ['Riau', 'Selaso Jatuh Kembar', 'Tari Zapin'],
-                ['Sumatera Barat', 'Rumah Gadang', 'Tari Piring'],
-                ['Jawa Tengah', 'Joglo', 'Wayang Kulit'],
-                ['Kalimantan Barat', 'Rumah Betang', 'Tari Monong'],
-              ],
+              content:
+                'Indonesia memiliki keragaman suku bangsa, bahasa daerah, pakaian adat, rumah adat, tarian tradisional, serta sistem kekerabatan yang sangat kaya.',
             },
           },
         ],
-      },
-      {
-        id: 'p-16',
-        title: 'Sikap Toleransi',
-        blocks: [
-          {
-            id: 'b-39',
-            type: 'text',
-            text: {
-              style: 'heading',
-              content: 'Menjaga Harmoni Sosial',
-            },
-          },
-          {
-            id: 'b-40',
-            type: 'text',
-            text: {
-              style: 'paragraph',
-              content: 'Semboyan Bhinneka Tunggal Ika menjadi landasan utama dalam menjaga integrasi bangsa di tengah perbedaan latar belakang kultural. Rasa saling menghormati dan sikap terbuka memperkuat persatuan masyarakat.',
-            },
-          },
-        ],
-      },
-      {
-        id: 'p-17',
-        title: 'Pelestarian Budaya',
-        blocks: [
-          {
-            id: 'b-41',
-            type: 'text',
-            text: {
-              style: 'heading',
-              content: 'Peran Generasi Muda',
-            },
-          },
-          {
-            id: 'b-42',
-            type: 'text',
-            text: {
-              style: 'paragraph',
-              content: 'Pelestarian budaya lokal dapat dilakukan melalui pengenalan warisan sastra, kebiasaan gotong royong, serta pemanfaatan media digital secara positif untuk mempromosikan tradisi nusantara.',
-            },
-          },
-        ],
+        question: {
+          id: 'q-ips-1',
+          question: 'Rumah adat tradisional khas masyarakat Melayu Riau bernama...',
+          options: [
+            { id: 'opt-ips-1a', label: 'A', text: 'Rumah Gadang' },
+            { id: 'opt-ips-1b', label: 'B', text: 'Selaso Jatuh Kembar' },
+            { id: 'opt-ips-1c', label: 'C', text: 'Rumah Joglo' },
+            { id: 'opt-ips-1d', label: 'D', text: 'Rumah Tongkonan' },
+          ],
+          correctOptionId: 'opt-ips-1b',
+          delaySeconds: 10,
+        },
       },
     ],
   },
@@ -543,8 +810,8 @@ export const INITIAL_MATERIALS: Material[] = [
     order: 6,
     pages: [
       {
-        id: 'p-18',
-        title: 'Pengertian Norma',
+        id: 'p-14',
+        type: 'materi',
         blocks: [
           {
             id: 'b-43',
@@ -559,143 +826,106 @@ export const INITIAL_MATERIALS: Material[] = [
             type: 'text',
             text: {
               style: 'paragraph',
-              content: 'Norma merupakan aturan atau ketentuan yang mengikat warga kelompok dalam masyarakat, dipakai sebagai panduan, tatanan, dan pengendali tingkah laku yang sesuai dan berterima.',
-            },
-          },
-          {
-            id: 'b-45',
-            type: 'text',
-            text: {
-              style: 'paragraph',
-              content: 'Keberadaan norma menciptakan keteraturan, kepastian hukum, rasa aman, serta ketenteraman bersama dalam kehidupan bermasyarakat, berbangsa, dan bernegara.',
+              content:
+                'Norma merupakan aturan atau ketentuan yang mengikat warga kelompok dalam masyarakat, dipakai sebagai panduan, tatanan, dan pengendali tingkah laku yang sesuai dan berterima.',
             },
           },
         ],
-      },
-      {
-        id: 'p-19',
-        title: 'Macam-Macam Norma',
-        blocks: [
-          {
-            id: 'b-46',
-            type: 'text',
-            text: {
-              style: 'heading',
-              content: 'Empat Norma Pokok',
-            },
-          },
-          {
-            id: 'b-47',
-            type: 'table',
-            table: {
-              headers: ['Norma', 'Sumber', 'Sanksi'],
-              rows: [
-                ['Agama', 'Wahyu Tuhan Yang Maha Esa', 'Dosa (Kelak)'],
-                ['Kesusilaan', 'Hati Nurani Manusia', 'Penyesalan Diri'],
-                ['Kesopanan', 'Pergaulan Masyarakat', 'Dicemooh/Dikucilkan'],
-                ['Hukum', 'Lembaga Resmi Negara', 'Tegas dan Mengikat'],
-              ],
-            },
-          },
-        ],
-      },
-      {
-        id: 'p-20',
-        title: 'Penerapan di Sekolah',
-        blocks: [
-          {
-            id: 'b-48',
-            type: 'text',
-            text: {
-              style: 'heading',
-              content: 'Budaya Disiplin dan Santun',
-            },
-          },
-          {
-            id: 'b-49',
-            type: 'text',
-            text: {
-              style: 'paragraph',
-              content: 'Di lingkungan sekolah, norma diterapkan melalui tata tertib kehadiran, sikap hormat kepada guru dan staf kependidikan, serta kepedulian terhadap sesama rekan sebaya tanpa diskriminasi.',
-            },
-          },
-        ],
+        question: {
+          id: 'q-ppkn-1',
+          question: 'Norma yang bersumber dari hati nurani manusia yang menghasilkan rasa penyesalan jika dilanggar adalah norma...',
+          options: [
+            { id: 'opt-ppkn-1a', label: 'A', text: 'Hukum' },
+            { id: 'opt-ppkn-1b', label: 'B', text: 'Kesusilaan' },
+            { id: 'opt-ppkn-1c', label: 'C', text: 'Kesopanan' },
+            { id: 'opt-ppkn-1d', label: 'D', text: 'Agama' },
+          ],
+          correctOptionId: 'opt-ppkn-1b',
+          delaySeconds: 10,
+        },
       },
     ],
   },
 ];
 
 export const INITIAL_GRADE_SETTINGS: GradeSettings = {
-  bobotTugas: 20,
-  bobotKuis: 20,
-  bobotUts: 25,
-  bobotUas: 35,
+  bobotUjiPemahaman: 30,
+  bobotKuisAkhir: 70,
   kkm: 75,
   batasA: 90,
   batasB: 80,
   batasC: 70,
 };
 
-export function calculateGrade(
-  tugas: number,
-  kuis: number,
-  uts: number,
-  uas: number,
+export function calculateMaterialGrade(
+  ujiPemahaman: number,
+  kuisAkhir: number,
+  hasKuis: boolean,
   settings: GradeSettings = INITIAL_GRADE_SETTINGS
-): { nilaiAkhir: number; predikat: 'A' | 'B' | 'C' | 'D' } {
-  const sumWeights = settings.bobotTugas + settings.bobotKuis + settings.bobotUts + settings.bobotUas;
-  const weighted =
-    (tugas * settings.bobotTugas +
-      kuis * settings.bobotKuis +
-      uts * settings.bobotUts +
-      uas * settings.bobotUas) /
-    (sumWeights || 100);
+): { nilaiAkhir: number; predikat: 'A' | 'B' | 'C' | 'D' | '-' } {
+  if (hasKuis && (kuisAkhir < 0 || isNaN(kuisAkhir))) {
+    return { nilaiAkhir: -1, predikat: '-' };
+  }
 
-  const rounded = Math.round(weighted);
+  let finalScore = 0;
+  if (!hasKuis) {
+    finalScore = ujiPemahaman >= 0 ? ujiPemahaman : 0;
+  } else {
+    const totalWeights = settings.bobotUjiPemahaman + settings.bobotKuisAkhir;
+    finalScore = Math.round(
+      (ujiPemahaman * settings.bobotUjiPemahaman + kuisAkhir * settings.bobotKuisAkhir) /
+        (totalWeights || 100)
+    );
+  }
+
   let predikat: 'A' | 'B' | 'C' | 'D' = 'D';
-  if (rounded >= settings.batasA) predikat = 'A';
-  else if (rounded >= settings.batasB) predikat = 'B';
-  else if (rounded >= settings.batasC) predikat = 'C';
-  else predikat = 'D';
-
-  return { nilaiAkhir: rounded, predikat };
+  if (finalScore >= settings.batasA) predikat = 'A';
+  else if (finalScore >= settings.batasB) predikat = 'B';
+  else if (finalScore >= settings.batasC) predikat = 'C';
+  return { nilaiAkhir: finalScore, predikat };
 }
 
-// Generate realistic grade records across 4 subjects for all 24 students
-const SUBJECTS = ['Matematika', 'IPA', 'Bahasa Indonesia', 'Bahasa Inggris'];
+export function calculateGrade(
+  ujiPemahaman: number,
+  kuisAkhir: number,
+  settings: GradeSettings = INITIAL_GRADE_SETTINGS,
+  hasKuis: boolean = true
+): { nilaiAkhir: number; predikat: 'A' | 'B' | 'C' | 'D' | '-' } {
+  return calculateMaterialGrade(ujiPemahaman, kuisAkhir, hasKuis, settings);
+}
 
+// Generate sample grades with realistic spread 60-98
 export const INITIAL_GRADES: GradeRecord[] = (() => {
   const list: GradeRecord[] = [];
+  const evalMaterials = [INITIAL_MATERIALS[0], INITIAL_MATERIALS[1]]; // Matematika & IPA
+
   INITIAL_STUDENTS.forEach((student, sIdx) => {
-    SUBJECTS.forEach((subject, subIdx) => {
-      // Deterministic spread between 62 and 98 to produce A, B, C, D
-      const baseSeed = (sIdx * 17 + subIdx * 23) % 40;
-      let tugas = 65 + baseSeed;
-      let kuis = 62 + ((baseSeed + 7) % 36);
-      let uts = 64 + ((baseSeed + 13) % 35);
-      let uas = 60 + ((baseSeed + 19) % 38);
-
-      // Clamp between 60 and 98
-      tugas = Math.min(98, Math.max(60, tugas));
-      kuis = Math.min(98, Math.max(60, kuis));
-      uts = Math.min(98, Math.max(60, uts));
-      uas = Math.min(98, Math.max(60, uas));
-
-      const { nilaiAkhir, predikat } = calculateGrade(tugas, kuis, uts, uas, INITIAL_GRADE_SETTINGS);
+    evalMaterials.forEach((mat, mIdx) => {
+      // Deterministic spread
+      const seed = (sIdx * 19 + mIdx * 29) % 38;
+      const uji = Math.min(100, Math.max(65, 70 + seed));
+      const kuis = Math.min(100, Math.max(60, 68 + ((seed + 11) % 31)));
+      const hasKuis = mat.pages.some((p) => p.type === 'kuis_akhir');
+      const { nilaiAkhir, predikat } = calculateMaterialGrade(
+        uji,
+        kuis,
+        hasKuis,
+        INITIAL_GRADE_SETTINGS
+      );
 
       list.push({
-        id: `grd-${student.nisn}-${subIdx}`,
+        id: `grd-${student.nisn}-${mat.id}`,
         studentNisn: student.nisn,
         studentName: student.name,
         className: student.className,
-        subject,
-        tugas,
-        kuis,
-        uts,
-        uas,
+        subject: mat.subject,
+        materialId: mat.id,
+        materialTitle: mat.title,
+        ujiPemahaman: uji,
+        kuisAkhir: kuis,
         nilaiAkhir,
         predikat,
-        updatedAt: '2026-10-15 09:30',
+        updatedAt: '2026-10-17 10:30',
       });
     });
   });
@@ -736,7 +966,7 @@ export const INITIAL_CMS_SETTINGS: CmsSettings = {
   colorBgEnd: '#0F766E',
   colorTextPrimary: '#ECFEFF',
   colorTextSecondary: '#A5D8D3',
-  glassOpacity: 0.40,
+  glassOpacity: 0.4,
   glassContentOpacity: 0.55,
   glassBlur: 18,
   borderRadius: 20,
@@ -744,30 +974,48 @@ export const INITIAL_CMS_SETTINGS: CmsSettings = {
 
   // 4. Sidebar & Menu
   labelRekapNilai: 'Rekap Nilai',
-  sectionTitleMateri: 'Materi',
   labelKeluar: 'Keluar',
+  sectionTitleMateri: 'Materi Belajar',
   showProfileCard: true,
+  showOpenedCheckmark: true,
   groupBySubject: true,
 
   // 5. Tampilan Materi
-  tabStyle: 'pill',
+  tabStyle: 'Angka',
+  tabDefaultBg: 'rgba(15, 118, 110, 0.4)',
+  tabDefaultTextColor: '#A5D8D3',
+  tabActiveBg: 'rgba(45, 212, 191, 0.55)',
+  tabActiveTextColor: '#ECFEFF',
+  pageMarginX: 8,
   contentFontSize: 16,
   maxReadWidth: 820,
-  showOpenedCheckmark: true,
   emptyMaterialText: 'Belum ada materi',
 
-  // 6. Rekap Nilai
+  // 6. Uji Pemahaman & Kuis Akhir
+  popupSuccessText: 'Kamu sudah menguasai materi ini',
+  popupDuration: 1.8,
+  questionDelaySeconds: 10,
+  btnPrev: 'Mundur',
+  btnNext: 'Lanjut',
+  btnFinish: 'Selesai',
+  btnBack: 'Kembali',
+  btnConfirmFinish: 'Selesaikan',
+  confirmUnansweredText: 'Masih ada {count} soal belum dijawab.',
+  quizResultTitle: 'Hasil Kuis',
+  numberUnansweredColor: '#EF4444',
+  numberAnsweredColor: '#22C55E',
+
+  // 7. Rekap Nilai
   rekapTitle: 'Rekap Nilai',
   labelColSubject: 'Mata Pelajaran',
-  labelColTugas: 'Tugas',
-  labelColKuis: 'Kuis',
-  labelColUts: 'UTS',
-  labelColUas: 'UAS',
-  labelColAkhir: 'Nilai Akhir',
+  labelColMaterial: 'Materi',
+  labelColUjiPemahaman: 'Uji Pemahaman',
+  labelColKuisAkhir: 'Kuis Akhir',
+  labelColNilaiAkhir: 'Nilai Akhir',
   labelColPredikat: 'Predikat',
-  labelAvgCard: 'Rata-rata Nilai Akhir',
-  labelTuntasCard: 'Mapel Tuntas',
-  labelProgressCard: 'Progres Materi',
+  labelCardAvg: 'Rata-rata Nilai Akhir',
+  labelCardTuntas: 'Materi Tuntas',
+  labelCardDikerjakan: 'Materi Dikerjakan',
   showSummaryCards: true,
   showGradeChart: true,
   predikatColorA: '#34D399',
@@ -775,7 +1023,7 @@ export const INITIAL_CMS_SETTINGS: CmsSettings = {
   predikatColorC: '#FBBF24',
   predikatColorD: '#FB923C',
 
-  // 7. Teks & Pesan
+  // 8. Teks & Pesan
   msgCountdown: 'Tunggu {seconds} detik',
   msgSaved: 'Berhasil disimpan',
   msgUploadFailed: 'Gagal mengunggah',
@@ -784,10 +1032,10 @@ export const INITIAL_CMS_SETTINGS: CmsSettings = {
   msgPageNotFound: 'Halaman Tidak Ditemukan',
   msgOfflineBadge: 'Offline',
 
-  // 8. Fitur
+  // 9. Fitur
   featureSpinLogo: true,
-  featureOpenedMark: true,
   featureRememberLast: true,
+  featureOpenedMark: true,
   featureSummaryCards: true,
   featureGradeChart: true,
 };
@@ -804,10 +1052,10 @@ export const INITIAL_SYNC_SETTINGS: SyncSettings = {
 
 export const INITIAL_ACTIVITY_LOGS: ActivityLog[] = [
   { id: 'log-01', timestamp: '2026-10-17 14:10', role: 'Admin', action: 'Memperbarui materi Bilangan Bulat dan Operasinya' },
-  { id: 'log-02', timestamp: '2026-10-17 11:45', role: 'Admin', action: 'Menyimpan nilai Matematika kelas VII A' },
+  { id: 'log-02', timestamp: '2026-10-17 11:45', role: 'Admin', action: 'Menyimpan nilai evaluasi siswa' },
   { id: 'log-03', timestamp: '2026-10-16 16:30', role: 'Admin', action: 'Memperbarui pengaturan CMS Identitas' },
-  { id: 'log-04', timestamp: '2026-10-16 10:15', role: 'Admin', action: 'Menambah data siswa baru kelas IX A' },
+  { id: 'log-04', timestamp: '2026-10-16 10:15', role: 'Admin', action: 'Menambah data siswa baru' },
   { id: 'log-05', timestamp: '2026-10-15 08:20', role: 'Admin', action: 'Menguji koneksi spreadsheet' },
 ];
 
-export const INITIAL_ADMIN_PASSWORD_HASH = '8c6976e5b5410415bde908bd4dee15dfb167a9c873fc4bb8a81f6f2ab448a918'; // sha256 of "admin123"
+export const INITIAL_ADMIN_PASSWORD_HASH = '8c6976e5b5410415bde908bd4dee15dfb167a9c873fc4bb8a81f6f2ab448a918';

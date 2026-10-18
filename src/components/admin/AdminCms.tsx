@@ -455,29 +455,29 @@ export const AdminCms: React.FC<AdminCmsProps> = ({ cms, onShowToast }) => {
                 onChange={(e) => handleFieldChange('labelColSubject', e.target.value)}
               />
               <GlassInput
-                label="Label Kolom Tugas"
-                value={draftCms.labelColTugas}
-                onChange={(e) => handleFieldChange('labelColTugas', e.target.value)}
+                label="Label Kolom Materi"
+                value={draftCms.labelColMaterial}
+                onChange={(e) => handleFieldChange('labelColMaterial', e.target.value)}
               />
               <GlassInput
-                label="Label Kolom Kuis"
-                value={draftCms.labelColKuis}
-                onChange={(e) => handleFieldChange('labelColKuis', e.target.value)}
+                label="Label Kolom Uji Pemahaman"
+                value={draftCms.labelColUjiPemahaman}
+                onChange={(e) => handleFieldChange('labelColUjiPemahaman', e.target.value)}
               />
               <GlassInput
-                label="Label Kolom UTS"
-                value={draftCms.labelColUts}
-                onChange={(e) => handleFieldChange('labelColUts', e.target.value)}
-              />
-              <GlassInput
-                label="Label Kolom UAS"
-                value={draftCms.labelColUas}
-                onChange={(e) => handleFieldChange('labelColUas', e.target.value)}
+                label="Label Kolom Kuis Akhir"
+                value={draftCms.labelColKuisAkhir}
+                onChange={(e) => handleFieldChange('labelColKuisAkhir', e.target.value)}
               />
               <GlassInput
                 label="Label Kolom Nilai Akhir"
-                value={draftCms.labelColAkhir}
-                onChange={(e) => handleFieldChange('labelColAkhir', e.target.value)}
+                value={draftCms.labelColNilaiAkhir}
+                onChange={(e) => handleFieldChange('labelColNilaiAkhir', e.target.value)}
+              />
+              <GlassInput
+                label="Label Kolom Predikat"
+                value={draftCms.labelColPredikat}
+                onChange={(e) => handleFieldChange('labelColPredikat', e.target.value)}
               />
             </div>
 

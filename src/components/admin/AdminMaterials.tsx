@@ -18,8 +18,20 @@ import {
   Table as TableIcon,
   Minus,
   Check,
+  Gamepad2,
+  HelpCircle,
+  Award,
 } from 'lucide-react';
-import { Material, MaterialPage, MaterialBlock, BlockType, CmsSettings } from '../../types';
+import {
+  Material,
+  MaterialPage,
+  MaterialBlock,
+  BlockType,
+  PageType,
+  QuestionItem,
+  QuizOption,
+  CmsSettings,
+} from '../../types';
 import { StorageService } from '../../services/storageService';
 import { GlassCard } from '../common/GlassCard';
 import { GlassButton } from '../common/GlassButton';
@@ -103,6 +115,7 @@ export const AdminMaterials: React.FC<AdminMaterialsProps> = ({ cms, onShowToast
       setFormPages([
         {
           id: `p-${Date.now()}`,
+          type: 'materi',
           title: 'Halaman 1',
           blocks: [
             {
@@ -189,6 +202,7 @@ export const AdminMaterials: React.FC<AdminMaterialsProps> = ({ cms, onShowToast
   const addPage = () => {
     const newPage: MaterialPage = {
       id: `p-${Date.now()}`,
+      type: 'materi',
       title: `Halaman ${formPages.length + 1}`.slice(0, 20),
       blocks: [
         {
@@ -210,7 +224,7 @@ export const AdminMaterials: React.FC<AdminMaterialsProps> = ({ cms, onShowToast
     const cloned: MaterialPage = {
       ...JSON.parse(JSON.stringify(source)),
       id: `p-${Date.now()}`,
-      title: `${source.title} (Salinan)`.slice(0, 20),
+      title: `${source.title || 'Halaman'} (Salinan)`.slice(0, 20),
     };
     const updated = [...formPages];
     updated.splice(idx + 1, 0, cloned);
@@ -243,6 +257,42 @@ export const AdminMaterials: React.FC<AdminMaterialsProps> = ({ cms, onShowToast
     }
   };
 
+  const setPageType = (idx: number, newType: PageType) => {
+    const updated = [...formPages];
+    const page = updated[idx];
+    if (!page) return;
+    page.type = newType;
+    if (newType === 'materi' && !page.blocks) {
+      page.blocks = [
+        {
+          id: `b-${Date.now()}`,
+          type: 'text',
+          text: { style: 'paragraph', content: '' },
+        },
+      ];
+    } else if (newType === 'game' && page.gameHtml === undefined) {
+      page.gameHtml = '<!DOCTYPE html>\n<html>\n<head>\n  <meta charset="utf-8">\n  <style>body{margin:0;display:flex;align-items:center;justify-content:center;height:100vh;background:#042f2e;color:#ecfeff;font-family:sans-serif;}</style>\n</head>\n<body>\n  <h2>Game Pembelajaran</h2>\n</body>\n</html>';
+    } else if (newType === 'kuis_akhir') {
+      if (!page.quizQuestions || page.quizQuestions.length === 0) {
+        page.quizQuestions = [
+          {
+            id: `qk-${Date.now()}`,
+            question: '',
+            options: [
+              { id: 'opt-a', label: 'A', text: '' },
+              { id: 'opt-b', label: 'B', text: '' },
+              { id: 'opt-c', label: 'C', text: '' },
+              { id: 'opt-d', label: 'D', text: '' },
+            ],
+            correctOptionId: 'opt-a',
+          },
+        ];
+      }
+      if (page.maxAttempts === undefined) page.maxAttempts = 0;
+    }
+    setFormPages(updated);
+  };
+
   // Block Operations on current page
   const currentPage = formPages[activePageIdx];
 
@@ -269,14 +319,16 @@ export const AdminMaterials: React.FC<AdminMaterialsProps> = ({ cms, onShowToast
     }
 
     const updatedPages = [...formPages];
-    updatedPages[activePageIdx].blocks.push(newBlock);
+    if (!updatedPages[activePageIdx].blocks) updatedPages[activePageIdx].blocks = [];
+    updatedPages[activePageIdx].blocks!.push(newBlock);
     setFormPages(updatedPages);
   };
 
   const updateBlock = (blockIdx: number, patch: Partial<MaterialBlock>) => {
     const updatedPages = [...formPages];
-    updatedPages[activePageIdx].blocks[blockIdx] = {
-      ...updatedPages[activePageIdx].blocks[blockIdx],
+    if (!updatedPages[activePageIdx].blocks) return;
+    updatedPages[activePageIdx].blocks![blockIdx] = {
+      ...updatedPages[activePageIdx].blocks![blockIdx],
       ...patch,
     };
     setFormPages(updatedPages);
@@ -284,12 +336,13 @@ export const AdminMaterials: React.FC<AdminMaterialsProps> = ({ cms, onShowToast
 
   const removeBlock = (blockIdx: number) => {
     const updatedPages = [...formPages];
-    updatedPages[activePageIdx].blocks.splice(blockIdx, 1);
+    if (!updatedPages[activePageIdx].blocks) return;
+    updatedPages[activePageIdx].blocks!.splice(blockIdx, 1);
     setFormPages(updatedPages);
   };
 
   const moveBlock = (blockIdx: number, direction: 'up' | 'down') => {
-    const blocks = formPages[activePageIdx].blocks;
+    const blocks = formPages[activePageIdx]?.blocks || [];
     if (direction === 'up' && blockIdx > 0) {
       const updatedPages = [...formPages];
       const temp = blocks[blockIdx - 1];
@@ -647,224 +700,544 @@ export const AdminMaterials: React.FC<AdminMaterialsProps> = ({ cms, onShowToast
                 </div>
               </div>
 
-              {/* Block Editor for Active Page */}
+              {/* Page Editor for Active Page */}
               {currentPage && (
                 <div className="flex flex-col gap-4 pt-3 border-t border-white/10">
-                  <div className="flex items-center justify-between flex-wrap gap-2">
+                  {/* Page Type Selector */}
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 bg-black/20 p-3 rounded-xl border border-white/10">
                     <span className="text-xs font-bold text-[#A5D8D3] uppercase tracking-wider">
-                      Blok Konten: {currentPage.title}
+                      Jenis Halaman {activePageIdx + 1}
                     </span>
-
-                    {/* Add Block Action Buttons */}
                     <div className="flex items-center gap-1.5 flex-wrap">
                       <button
                         type="button"
-                        onClick={() => addBlock('text')}
-                        className="px-2.5 py-1 rounded-lg bg-white/10 hover:bg-white/20 text-xs text-[#ECFEFF] flex items-center gap-1 cursor-pointer"
+                        onClick={() => setPageType(activePageIdx, 'materi')}
+                        className={`px-3 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1.5 cursor-pointer transition-all ${
+                          (!currentPage.type || currentPage.type === 'materi')
+                            ? 'bg-[#2DD4BF] text-[#042F2E] font-bold'
+                            : 'bg-white/10 text-[#A5D8D3] hover:text-[#ECFEFF]'
+                        }`}
                       >
-                        <FileText className="w-3 h-3 text-[#2DD4BF]" />
-                        <span>Teks</span>
+                        <FileText className="w-3.5 h-3.5" />
+                        <span>Materi</span>
                       </button>
                       <button
                         type="button"
-                        onClick={() => addBlock('image')}
-                        className="px-2.5 py-1 rounded-lg bg-white/10 hover:bg-white/20 text-xs text-[#ECFEFF] flex items-center gap-1 cursor-pointer"
+                        onClick={() => setPageType(activePageIdx, 'game')}
+                        className={`px-3 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1.5 cursor-pointer transition-all ${
+                          currentPage.type === 'game'
+                            ? 'bg-[#2DD4BF] text-[#042F2E] font-bold'
+                            : 'bg-white/10 text-[#A5D8D3] hover:text-[#ECFEFF]'
+                        }`}
                       >
-                        <ImageIcon className="w-3 h-3 text-[#2DD4BF]" />
-                        <span>Gambar</span>
+                        <Gamepad2 className="w-3.5 h-3.5" />
+                        <span>Game</span>
                       </button>
                       <button
                         type="button"
-                        onClick={() => addBlock('video')}
-                        className="px-2.5 py-1 rounded-lg bg-white/10 hover:bg-white/20 text-xs text-[#ECFEFF] flex items-center gap-1 cursor-pointer"
+                        onClick={() => setPageType(activePageIdx, 'kuis_akhir')}
+                        className={`px-3 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1.5 cursor-pointer transition-all ${
+                          currentPage.type === 'kuis_akhir'
+                            ? 'bg-[#2DD4BF] text-[#042F2E] font-bold'
+                            : 'bg-white/10 text-[#A5D8D3] hover:text-[#ECFEFF]'
+                        }`}
                       >
-                        <Video className="w-3 h-3 text-[#2DD4BF]" />
-                        <span>Video</span>
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => addBlock('pdf')}
-                        className="px-2.5 py-1 rounded-lg bg-white/10 hover:bg-white/20 text-xs text-[#ECFEFF] flex items-center gap-1 cursor-pointer"
-                      >
-                        <FileCode className="w-3 h-3 text-[#2DD4BF]" />
-                        <span>PDF</span>
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => addBlock('table')}
-                        className="px-2.5 py-1 rounded-lg bg-white/10 hover:bg-white/20 text-xs text-[#ECFEFF] flex items-center gap-1 cursor-pointer"
-                      >
-                        <TableIcon className="w-3 h-3 text-[#2DD4BF]" />
-                        <span>Tabel</span>
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => addBlock('divider')}
-                        className="px-2.5 py-1 rounded-lg bg-white/10 hover:bg-white/20 text-xs text-[#ECFEFF] flex items-center gap-1 cursor-pointer"
-                      >
-                        <Minus className="w-3 h-3 text-[#2DD4BF]" />
-                        <span>Pemisah</span>
+                        <Award className="w-3.5 h-3.5" />
+                        <span>Kuis Akhir</span>
                       </button>
                     </div>
                   </div>
 
-                  {/* List of Blocks */}
-                  <div className="flex flex-col gap-3">
-                    {currentPage.blocks.map((block, bIdx) => (
-                      <div
-                        key={block.id}
-                        className="p-4 bg-black/20 rounded-xl border border-white/10 flex flex-col gap-3"
-                      >
-                        <div className="flex items-center justify-between text-xs text-[#A5D8D3] pb-2 border-b border-white/5">
-                          <span className="font-semibold uppercase tracking-wide">
-                            {block.type}
-                          </span>
-                          <div className="flex items-center gap-1">
-                            <button
-                              type="button"
-                              disabled={bIdx === 0}
-                              onClick={() => moveBlock(bIdx, 'up')}
-                              className="p-1 disabled:opacity-20 cursor-pointer"
-                              aria-label="Naik"
-                            >
-                              <ArrowUp className="w-3.5 h-3.5" />
-                            </button>
-                            <button
-                              type="button"
-                              disabled={bIdx === currentPage.blocks.length - 1}
-                              onClick={() => moveBlock(bIdx, 'down')}
-                              className="p-1 disabled:opacity-20 cursor-pointer"
-                              aria-label="Turun"
-                            >
-                              <ArrowDown className="w-3.5 h-3.5" />
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => removeBlock(bIdx)}
-                              className="p-1 text-red-400 hover:text-red-300 cursor-pointer ml-1"
-                              aria-label="Hapus Blok"
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </button>
+                  {/* 1. MATERI EDITOR */}
+                  {(!currentPage.type || currentPage.type === 'materi') && (
+                    <div className="flex flex-col gap-4">
+                      {/* Blocks Header & Actions */}
+                      <div className="flex items-center justify-between flex-wrap gap-2">
+                        <span className="text-xs font-bold text-[#A5D8D3] uppercase tracking-wider">
+                          Blok Konten
+                        </span>
+
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <button
+                            type="button"
+                            onClick={() => addBlock('text')}
+                            className="px-2.5 py-1 rounded-lg bg-white/10 hover:bg-white/20 text-xs text-[#ECFEFF] flex items-center gap-1 cursor-pointer"
+                          >
+                            <FileText className="w-3 h-3 text-[#2DD4BF]" />
+                            <span>Teks</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => addBlock('image')}
+                            className="px-2.5 py-1 rounded-lg bg-white/10 hover:bg-white/20 text-xs text-[#ECFEFF] flex items-center gap-1 cursor-pointer"
+                          >
+                            <ImageIcon className="w-3 h-3 text-[#2DD4BF]" />
+                            <span>Gambar</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => addBlock('video')}
+                            className="px-2.5 py-1 rounded-lg bg-white/10 hover:bg-white/20 text-xs text-[#ECFEFF] flex items-center gap-1 cursor-pointer"
+                          >
+                            <Video className="w-3 h-3 text-[#2DD4BF]" />
+                            <span>Video</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => addBlock('pdf')}
+                            className="px-2.5 py-1 rounded-lg bg-white/10 hover:bg-white/20 text-xs text-[#ECFEFF] flex items-center gap-1 cursor-pointer"
+                          >
+                            <FileCode className="w-3 h-3 text-[#2DD4BF]" />
+                            <span>PDF</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => addBlock('table')}
+                            className="px-2.5 py-1 rounded-lg bg-white/10 hover:bg-white/20 text-xs text-[#ECFEFF] flex items-center gap-1 cursor-pointer"
+                          >
+                            <TableIcon className="w-3 h-3 text-[#2DD4BF]" />
+                            <span>Tabel</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => addBlock('divider')}
+                            className="px-2.5 py-1 rounded-lg bg-white/10 hover:bg-white/20 text-xs text-[#ECFEFF] flex items-center gap-1 cursor-pointer"
+                          >
+                            <Minus className="w-3 h-3 text-[#2DD4BF]" />
+                            <span>Pemisah</span>
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* List of Blocks */}
+                      <div className="flex flex-col gap-3">
+                        {(currentPage.blocks || []).map((block, bIdx) => (
+                          <div
+                            key={block.id}
+                            className="p-4 bg-black/20 rounded-xl border border-white/10 flex flex-col gap-3"
+                          >
+                            <div className="flex items-center justify-between text-xs text-[#A5D8D3] pb-2 border-b border-white/5">
+                              <span className="font-semibold uppercase tracking-wide">
+                                {block.type}
+                              </span>
+                              <div className="flex items-center gap-1">
+                                <button
+                                  type="button"
+                                  disabled={bIdx === 0}
+                                  onClick={() => moveBlock(bIdx, 'up')}
+                                  className="p-1 disabled:opacity-20 cursor-pointer"
+                                  aria-label="Naik"
+                                >
+                                  <ArrowUp className="w-3.5 h-3.5" />
+                                </button>
+                                <button
+                                  type="button"
+                                  disabled={bIdx === (currentPage.blocks?.length || 0) - 1}
+                                  onClick={() => moveBlock(bIdx, 'down')}
+                                  className="p-1 disabled:opacity-20 cursor-pointer"
+                                  aria-label="Turun"
+                                >
+                                  <ArrowDown className="w-3.5 h-3.5" />
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => removeBlock(bIdx)}
+                                  className="p-1 text-red-400 hover:text-red-300 cursor-pointer ml-1"
+                                  aria-label="Hapus Blok"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
+                            </div>
+
+                            {/* Block Type Forms */}
+                            {block.type === 'text' && (
+                              <div className="flex flex-col gap-2">
+                                <select
+                                  value={block.text?.style || 'paragraph'}
+                                  onChange={(e) =>
+                                    updateBlock(bIdx, {
+                                      text: {
+                                        content: block.text?.content || '',
+                                        style: e.target.value as any,
+                                      },
+                                    })
+                                  }
+                                  className="w-36 px-2.5 py-1 text-xs bg-[#0B4F4A] border border-white/20 rounded-lg text-[#ECFEFF] focus:outline-none"
+                                >
+                                  <option value="heading">Judul</option>
+                                  <option value="subheading">Subjudul</option>
+                                  <option value="paragraph">Paragraf</option>
+                                  <option value="quote">Kutipan</option>
+                                </select>
+                                <textarea
+                                  rows={3}
+                                  value={block.text?.content || ''}
+                                  onChange={(e) =>
+                                    updateBlock(bIdx, {
+                                      text: {
+                                        style: block.text?.style || 'paragraph',
+                                        content: e.target.value,
+                                      },
+                                    })
+                                  }
+                                  className="w-full px-3 py-2 text-sm bg-white/10 border border-white/20 rounded-xl text-[#ECFEFF] focus:outline-none focus:border-[#2DD4BF]"
+                                />
+                              </div>
+                            )}
+
+                            {block.type === 'image' && (
+                              <ImageUploader
+                                source={block.image?.source || 'tautan'}
+                                value={block.image?.value || ''}
+                                onChange={(source, value) =>
+                                  updateBlock(bIdx, {
+                                    image: { source, value, caption: block.image?.caption },
+                                  })
+                                }
+                                onClear={() =>
+                                  updateBlock(bIdx, {
+                                    image: { source: 'tautan', value: '', caption: '' },
+                                  })
+                                }
+                              />
+                            )}
+
+                            {block.type === 'video' && (
+                              <div className="flex flex-col gap-2">
+                                <label className="text-xs text-[#A5D8D3]">Tautan YouTube</label>
+                                <input
+                                  type="url"
+                                  value={block.video?.youtubeUrl || ''}
+                                  onChange={(e) =>
+                                    updateBlock(bIdx, { video: { youtubeUrl: e.target.value } })
+                                  }
+                                  placeholder="https://www.youtube.com/watch?v=..."
+                                  className="w-full px-3 py-2 text-sm bg-white/10 border border-white/20 rounded-xl text-[#ECFEFF] focus:outline-none focus:border-[#2DD4BF]"
+                                />
+                              </div>
+                            )}
+
+                            {block.type === 'pdf' && (
+                              <ImageUploader
+                                isDocument
+                                source={block.pdf?.source || 'tautan'}
+                                value={block.pdf?.value || ''}
+                                onChange={(source, value) =>
+                                  updateBlock(bIdx, {
+                                    pdf: { source, value, name: 'Dokumen' },
+                                  })
+                                }
+                                onClear={() =>
+                                  updateBlock(bIdx, {
+                                    pdf: { source: 'tautan', value: '' },
+                                  })
+                                }
+                              />
+                            )}
+
+                            {block.type === 'table' && (
+                              <div className="flex flex-col gap-2">
+                                <div className="text-xs text-[#A5D8D3]">
+                                  Header (pisahkan dengan koma):
+                                </div>
+                                <input
+                                  type="text"
+                                  value={(block.table?.headers || []).join(', ')}
+                                  onChange={(e) => {
+                                    const headers = e.target.value.split(',').map((h) => h.trim());
+                                    updateBlock(bIdx, {
+                                      table: {
+                                        headers,
+                                        rows: block.table?.rows || [],
+                                      },
+                                    });
+                                  }}
+                                  className="w-full px-3 py-1.5 text-xs bg-white/10 border border-white/20 rounded-xl text-[#ECFEFF]"
+                                />
+                              </div>
+                            )}
+
+                            {block.type === 'divider' && (
+                              <div className="py-2 text-center text-xs text-[#A5D8D3]">
+                                Pemisah Garis
+                              </div>
+                            )}
                           </div>
+                        ))}
+                      </div>
+
+                      {/* Uji Pemahaman Section */}
+                      <div className="p-4 bg-black/25 rounded-xl border border-white/15 flex flex-col gap-3 mt-2">
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-bold text-[#2DD4BF] uppercase tracking-wider flex items-center gap-1.5">
+                            <HelpCircle className="w-4 h-4" />
+                            <span>Uji Pemahaman Halaman Ini</span>
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const updated = [...formPages];
+                              if (currentPage.question) {
+                                delete updated[activePageIdx].question;
+                              } else {
+                                updated[activePageIdx].question = {
+                                  id: `q-${Date.now()}`,
+                                  question: '',
+                                  options: [
+                                    { id: 'opt-a', label: 'A', text: '' },
+                                    { id: 'opt-b', label: 'B', text: '' },
+                                    { id: 'opt-c', label: 'C', text: '' },
+                                    { id: 'opt-d', label: 'D', text: '' },
+                                  ],
+                                  correctOptionId: 'opt-a',
+                                  delaySeconds: 10,
+                                };
+                              }
+                              setFormPages(updated);
+                            }}
+                            className={`px-3 py-1 rounded-lg text-xs font-semibold cursor-pointer transition-colors ${
+                              currentPage.question
+                                ? 'bg-red-500/20 text-red-300 hover:bg-red-500/30'
+                                : 'bg-[#2DD4BF]/20 text-[#2DD4BF] hover:bg-[#2DD4BF]/30'
+                            }`}
+                          >
+                            {currentPage.question ? 'Hapus Pertanyaan' : 'Tambah Pertanyaan'}
+                          </button>
                         </div>
 
-                        {/* Block Type Forms */}
-                        {block.type === 'text' && (
-                          <div className="flex flex-col gap-2">
-                            <select
-                              value={block.text?.style || 'paragraph'}
-                              onChange={(e) =>
-                                updateBlock(bIdx, {
-                                  text: {
-                                    content: block.text?.content || '',
-                                    style: e.target.value as any,
-                                  },
-                                })
-                              }
-                              className="w-36 px-2.5 py-1 text-xs bg-[#0B4F4A] border border-white/20 rounded-lg text-[#ECFEFF] focus:outline-none"
-                            >
-                              <option value="heading">Judul</option>
-                              <option value="subheading">Subjudul</option>
-                              <option value="paragraph">Paragraf</option>
-                              <option value="quote">Kutipan</option>
-                            </select>
-                            <textarea
-                              rows={3}
-                              value={block.text?.content || ''}
-                              onChange={(e) =>
-                                updateBlock(bIdx, {
-                                  text: {
-                                    style: block.text?.style || 'paragraph',
-                                    content: e.target.value,
-                                  },
-                                })
-                              }
-                              className="w-full px-3 py-2 text-sm bg-white/10 border border-white/20 rounded-xl text-[#ECFEFF] focus:outline-none focus:border-[#2DD4BF]"
-                            />
-                          </div>
-                        )}
-
-                        {block.type === 'image' && (
-                          <ImageUploader
-                            source={block.image?.source || 'tautan'}
-                            value={block.image?.value || ''}
-                            onChange={(source, value) =>
-                              updateBlock(bIdx, {
-                                image: { source, value, caption: block.image?.caption },
-                              })
-                            }
-                            onClear={() =>
-                              updateBlock(bIdx, {
-                                image: { source: 'tautan', value: '', caption: '' },
-                              })
-                            }
-                          />
-                        )}
-
-                        {block.type === 'video' && (
-                          <div className="flex flex-col gap-2">
-                            <label className="text-xs text-[#A5D8D3]">Tautan YouTube</label>
-                            <input
-                              type="url"
-                              value={block.video?.youtubeUrl || ''}
-                              onChange={(e) =>
-                                updateBlock(bIdx, { video: { youtubeUrl: e.target.value } })
-                              }
-                              placeholder="https://www.youtube.com/watch?v=..."
-                              className="w-full px-3 py-2 text-sm bg-white/10 border border-white/20 rounded-xl text-[#ECFEFF] focus:outline-none focus:border-[#2DD4BF]"
-                            />
-                          </div>
-                        )}
-
-                        {block.type === 'pdf' && (
-                          <ImageUploader
-                            isDocument
-                            source={block.pdf?.source || 'tautan'}
-                            value={block.pdf?.value || ''}
-                            onChange={(source, value) =>
-                              updateBlock(bIdx, {
-                                pdf: { source, value, name: 'Dokumen' },
-                              })
-                            }
-                            onClear={() =>
-                              updateBlock(bIdx, {
-                                pdf: { source: 'tautan', value: '' },
-                              })
-                            }
-                          />
-                        )}
-
-                        {block.type === 'table' && (
-                          <div className="flex flex-col gap-2">
-                            <div className="text-xs text-[#A5D8D3]">
-                              Header (pisahkan dengan koma):
+                        {currentPage.question && (
+                          <div className="flex flex-col gap-3 pt-2">
+                            <div className="flex flex-col gap-1">
+                              <label className="text-xs text-[#A5D8D3]">Teks Pertanyaan</label>
+                              <textarea
+                                rows={2}
+                                value={currentPage.question.question}
+                                onChange={(e) => {
+                                  const updated = [...formPages];
+                                  if (updated[activePageIdx].question) {
+                                    updated[activePageIdx].question!.question = e.target.value;
+                                  }
+                                  setFormPages(updated);
+                                }}
+                                className="w-full px-3 py-2 text-sm bg-white/10 border border-white/20 rounded-xl text-[#ECFEFF] focus:outline-none focus:border-[#2DD4BF]"
+                              />
                             </div>
-                            <input
-                              type="text"
-                              value={(block.table?.headers || []).join(', ')}
-                              onChange={(e) => {
-                                const headers = e.target.value.split(',').map((h) => h.trim());
-                                updateBlock(bIdx, {
-                                  table: {
-                                    headers,
-                                    rows: block.table?.rows || [],
-                                  },
-                                });
-                              }}
-                              className="w-full px-3 py-1.5 text-xs bg-white/10 border border-white/20 rounded-xl text-[#ECFEFF]"
-                            />
-                          </div>
-                        )}
 
-                        {block.type === 'divider' && (
-                          <div className="py-2 text-center text-xs text-[#A5D8D3]">
-                            Pemisah Garis
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                              {currentPage.question.options.map((opt, oIdx) => (
+                                <div key={opt.id} className="flex items-center gap-2">
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      const updated = [...formPages];
+                                      if (updated[activePageIdx].question) {
+                                        updated[activePageIdx].question!.correctOptionId = opt.id;
+                                      }
+                                      setFormPages(updated);
+                                    }}
+                                    className={`w-7 h-7 rounded-lg text-xs font-bold shrink-0 cursor-pointer border ${
+                                      currentPage.question?.correctOptionId === opt.id
+                                        ? 'bg-[#34D399] text-[#042F2E] border-[#34D399]'
+                                        : 'bg-white/10 text-[#A5D8D3] border-white/20'
+                                    }`}
+                                  >
+                                    {opt.label}
+                                  </button>
+                                  <input
+                                    type="text"
+                                    value={opt.text}
+                                    onChange={(e) => {
+                                      const updated = [...formPages];
+                                      if (updated[activePageIdx].question) {
+                                        updated[activePageIdx].question!.options[oIdx].text = e.target.value;
+                                      }
+                                      setFormPages(updated);
+                                    }}
+                                    className="w-full px-2.5 py-1.5 text-xs bg-white/10 border border-white/20 rounded-lg text-[#ECFEFF] focus:outline-none focus:border-[#2DD4BF]"
+                                  />
+                                </div>
+                              ))}
+                            </div>
+
+                            <div className="flex items-center gap-3 pt-1">
+                              <label className="text-xs text-[#A5D8D3]">Jeda Waktu (Detik):</label>
+                              <input
+                                type="number"
+                                min={0}
+                                max={120}
+                                value={currentPage.question.delaySeconds ?? 10}
+                                onChange={(e) => {
+                                  const updated = [...formPages];
+                                  if (updated[activePageIdx].question) {
+                                    updated[activePageIdx].question!.delaySeconds = parseInt(e.target.value, 10) || 0;
+                                  }
+                                  setFormPages(updated);
+                                }}
+                                className="w-20 px-2 py-1 text-xs text-center bg-white/10 border border-white/20 rounded-lg text-[#ECFEFF]"
+                              />
+                            </div>
                           </div>
                         )}
                       </div>
-                    ))}
-                  </div>
+                    </div>
+                  )}
+
+                  {/* 2. GAME EDITOR */}
+                  {currentPage.type === 'game' && (
+                    <div className="flex flex-col gap-3">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-bold text-[#A5D8D3] uppercase tracking-wider">
+                          Kode HTML Permainan
+                        </span>
+                      </div>
+                      <textarea
+                        rows={10}
+                        value={currentPage.gameHtml || ''}
+                        onChange={(e) => {
+                          const updated = [...formPages];
+                          updated[activePageIdx].gameHtml = e.target.value;
+                          setFormPages(updated);
+                        }}
+                        className="w-full px-3 py-2 text-xs font-mono bg-black/40 border border-white/20 rounded-xl text-[#2DD4BF] focus:outline-none focus:border-[#2DD4BF]"
+                      />
+                      {currentPage.gameHtml && (
+                        <div className="flex flex-col gap-1.5 pt-2">
+                          <span className="text-xs text-[#A5D8D3]">Pratinjau Permainan</span>
+                          <div className="w-full h-64 rounded-xl overflow-hidden border border-white/20 bg-black/20">
+                            <iframe
+                              srcDoc={currentPage.gameHtml}
+                              title="Pratinjau Game"
+                              sandbox="allow-scripts"
+                              className="w-full h-full border-0"
+                            />
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* 3. KUIS AKHIR CBT EDITOR */}
+                  {currentPage.type === 'kuis_akhir' && (
+                    <div className="flex flex-col gap-4">
+                      <div className="flex items-center justify-between flex-wrap gap-2">
+                        <div className="flex items-center gap-3">
+                          <label className="text-xs text-[#A5D8D3]">Batas Percobaan:</label>
+                          <input
+                            type="number"
+                            min={0}
+                            max={10}
+                            value={currentPage.maxAttempts ?? 0}
+                            onChange={(e) => {
+                              const updated = [...formPages];
+                              updated[activePageIdx].maxAttempts = parseInt(e.target.value, 10) || 0;
+                              setFormPages(updated);
+                            }}
+                            className="w-20 px-2 py-1 text-xs text-center bg-white/10 border border-white/20 rounded-lg text-[#ECFEFF]"
+                          />
+                        </div>
+
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const updated = [...formPages];
+                            if (!updated[activePageIdx].quizQuestions) {
+                              updated[activePageIdx].quizQuestions = [];
+                            }
+                            updated[activePageIdx].quizQuestions!.push({
+                              id: `qk-${Date.now()}`,
+                              question: '',
+                              options: [
+                                { id: 'opt-a', label: 'A', text: '' },
+                                { id: 'opt-b', label: 'B', text: '' },
+                                { id: 'opt-c', label: 'C', text: '' },
+                                { id: 'opt-d', label: 'D', text: '' },
+                              ],
+                              correctOptionId: 'opt-a',
+                            });
+                            setFormPages(updated);
+                          }}
+                          className="px-3 py-1.5 rounded-lg bg-[#2DD4BF]/20 hover:bg-[#2DD4BF]/30 text-xs text-[#2DD4BF] font-semibold flex items-center gap-1 cursor-pointer"
+                        >
+                          <Plus className="w-3.5 h-3.5" />
+                          <span>Tambah Soal</span>
+                        </button>
+                      </div>
+
+                      {/* List of Quiz Questions */}
+                      <div className="flex flex-col gap-3">
+                        {(currentPage.quizQuestions || []).map((q, qIdx) => (
+                          <div
+                            key={q.id}
+                            className="p-4 bg-black/20 rounded-xl border border-white/10 flex flex-col gap-3"
+                          >
+                            <div className="flex items-center justify-between text-xs text-[#A5D8D3] pb-2 border-b border-white/5">
+                              <span className="font-bold text-[#ECFEFF]">Soal #{qIdx + 1}</span>
+                              {(currentPage.quizQuestions?.length || 0) > 1 && (
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    const updated = [...formPages];
+                                    updated[activePageIdx].quizQuestions!.splice(qIdx, 1);
+                                    setFormPages(updated);
+                                  }}
+                                  className="text-red-400 hover:text-red-300 p-1 cursor-pointer"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                              )}
+                            </div>
+
+                            <div className="flex flex-col gap-1">
+                              <label className="text-xs text-[#A5D8D3]">Teks Soal</label>
+                              <textarea
+                                rows={2}
+                                value={q.question}
+                                onChange={(e) => {
+                                  const updated = [...formPages];
+                                  updated[activePageIdx].quizQuestions![qIdx].question = e.target.value;
+                                  setFormPages(updated);
+                                }}
+                                className="w-full px-3 py-2 text-sm bg-white/10 border border-white/20 rounded-xl text-[#ECFEFF] focus:outline-none focus:border-[#2DD4BF]"
+                              />
+                            </div>
+
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                              {q.options.map((opt, oIdx) => (
+                                <div key={opt.id} className="flex items-center gap-2">
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      const updated = [...formPages];
+                                      updated[activePageIdx].quizQuestions![qIdx].correctOptionId = opt.id;
+                                      setFormPages(updated);
+                                    }}
+                                    className={`w-7 h-7 rounded-lg text-xs font-bold shrink-0 cursor-pointer border ${
+                                      q.correctOptionId === opt.id
+                                        ? 'bg-[#34D399] text-[#042F2E] border-[#34D399]'
+                                        : 'bg-white/10 text-[#A5D8D3] border-white/20'
+                                    }`}
+                                  >
+                                    {opt.label}
+                                  </button>
+                                  <input
+                                    type="text"
+                                    value={opt.text}
+                                    onChange={(e) => {
+                                      const updated = [...formPages];
+                                      updated[activePageIdx].quizQuestions![qIdx].options[oIdx].text = e.target.value;
+                                      setFormPages(updated);
+                                    }}
+                                    className="w-full px-2.5 py-1.5 text-xs bg-white/10 border border-white/20 rounded-lg text-[#ECFEFF] focus:outline-none focus:border-[#2DD4BF]"
+                                  />
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
 

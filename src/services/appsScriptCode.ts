@@ -20,6 +20,20 @@ var CONFIG = {
   SHEET_NILAI: "Rekap Nilai"
 };
 
+var HEADERS_NILAI = [
+  "NISN",
+  "Nama",
+  "Kelas",
+  "Mata Pelajaran",
+  "ID Materi",
+  "Materi",
+  "Uji Pemahaman",
+  "Kuis Akhir",
+  "Nilai Akhir",
+  "Predikat",
+  "Diperbarui"
+];
+
 function doGet(e) {
   return handleRequest(e);
 }
@@ -51,6 +65,8 @@ function handleRequest(e) {
       result = verifyStudentNisn(params.nisn);
     } else if (action === "getStudentGrades") {
       result = getStudentGradesByNisn(params.nisn);
+    } else if (action === "saveStudentGrade") {
+      result = saveStudentEvaluationGrade(params.record);
     } else if (action === "getImage") {
       result = getDriveImageBase64(params.fileId);
     } 
@@ -74,9 +90,7 @@ function handleRequest(e) {
       } else if (action === "importStudents") {
         result = importStudentsData(params.students);
       } else if (action === "getGrades") {
-        result = getGradesByClassAndSubject(params.className, params.subject);
-      } else if (action === "saveGrades") {
-        result = saveGradesData(params.className, params.subject, params.records);
+        result = getAllGradesRecords();
       } else if (action === "uploadFile") {
         result = uploadFileToDrive(params.fileName, params.mimeType, params.base64Data);
       } else if (action === "deleteFile") {
@@ -111,6 +125,12 @@ function getOrCreateSheet(ss, name, headers) {
     if (headers && headers.length > 0) {
       sheet.appendRow(headers);
     }
+  } else if (headers && headers.length > 0) {
+    // Sesuaikan header jika berbeda
+    var currentHeaders = sheet.getRange(1, 1, 1, sheet.getLastColumn() || 1).getValues()[0];
+    if (currentHeaders.length < headers.length || currentHeaders[0] !== headers[0]) {
+      sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
+    }
   }
   return sheet;
 }
@@ -138,27 +158,26 @@ function verifyStudentNisn(nisn) {
   return { success: false, error: "NISN tidak terdaftar" };
 }
 
-// 2. Ambil Nilai Khusus NISN Siswa
+// 2. Ambil Nilai Khusus NISN Siswa (Struktur Kolom Baru)
 function getStudentGradesByNisn(nisn) {
   var ss = getSpreadsheet();
-  var sheet = ss.getSheetByName(CONFIG.SHEET_NILAI);
-  if (!sheet) return { success: true, data: [] };
-
+  var sheet = getOrCreateSheet(ss, CONFIG.SHEET_NILAI, HEADERS_NILAI);
   var data = sheet.getDataRange().getValues();
   var grades = [];
   for (var i = 1; i < data.length; i++) {
     var rowNisn = String(data[i][0]).trim();
     if (rowNisn === String(nisn).trim()) {
       grades.push({
+        id: "grd-" + i,
         studentNisn: rowNisn,
         studentName: String(data[i][1]).trim(),
         className: String(data[i][2]).trim(),
         subject: String(data[i][3]).trim(),
-        tugas: Number(data[i][4]) || 0,
-        kuis: Number(data[i][5]) || 0,
-        uts: Number(data[i][6]) || 0,
-        uas: Number(data[i][7]) || 0,
-        nilaiAkhir: Number(data[i][8]) || 0,
+        materialId: String(data[i][4]).trim(),
+        materialTitle: String(data[i][5]).trim(),
+        ujiPemahaman: Number(data[i][6]) || 0,
+        kuisAkhir: data[i][7] === "-" ? -1 : (Number(data[i][7]) || 0),
+        nilaiAkhir: data[i][8] === "-" ? -1 : (Number(data[i][8]) || 0),
         predikat: String(data[i][9]).trim(),
         updatedAt: String(data[i][10] || "")
       });
@@ -167,7 +186,89 @@ function getStudentGradesByNisn(nisn) {
   return { success: true, data: grades };
 }
 
-// 3. Ambil Gambar Drive sebagai Base64
+// 3. Simpan Nilai Otomatis Milik Siswa (Selalu Menyimpan Nilai Tertinggi)
+function saveStudentEvaluationGrade(rec) {
+  if (!rec || !rec.studentNisn || !rec.materialId) {
+    return { success: false, error: "Data tidak lengkap" };
+  }
+  var ss = getSpreadsheet();
+  var sheet = getOrCreateSheet(ss, CONFIG.SHEET_NILAI, HEADERS_NILAI);
+  var data = sheet.getDataRange().getValues();
+
+  var foundRow = -1;
+  var existingUji = 0;
+  var existingKuis = -1;
+
+  for (var i = 1; i < data.length; i++) {
+    var rowNisn = String(data[i][0]).trim();
+    var rowMatId = String(data[i][4]).trim();
+    if (rowNisn === String(rec.studentNisn).trim() && rowMatId === String(rec.materialId).trim()) {
+      foundRow = i + 1;
+      existingUji = Number(data[i][6]) || 0;
+      existingKuis = data[i][7] === "-" ? -1 : (Number(data[i][7]) || -1);
+      break;
+    }
+  }
+
+  // Nilai tidak pernah turun
+  var finalUji = Math.max(existingUji, Number(rec.ujiPemahaman) || 0);
+  var finalKuis = existingKuis;
+  if (rec.kuisAkhir !== undefined && rec.kuisAkhir >= 0) {
+    finalKuis = Math.max(existingKuis, Number(rec.kuisAkhir));
+  }
+
+  var now = Utilities.formatDate(new Date(), "Asia/Jakarta", "yyyy-MM-dd HH:mm");
+  var rowValues = [
+    "'" + rec.studentNisn,
+    "'" + rec.studentName,
+    "'" + rec.className,
+    "'" + rec.subject,
+    "'" + rec.materialId,
+    "'" + rec.materialTitle,
+    finalUji,
+    finalKuis < 0 ? "-" : finalKuis,
+    rec.nilaiAkhir < 0 ? "-" : rec.nilaiAkhir,
+    rec.predikat || "-",
+    now
+  ];
+
+  if (foundRow > 0) {
+    sheet.getRange(foundRow, 1, 1, 11).setValues([rowValues]);
+  } else {
+    sheet.appendRow(rowValues);
+  }
+
+  return { success: true };
+}
+
+// 4. Ambil Seluruh Data Nilai untuk Staf
+function getAllGradesRecords() {
+  var ss = getSpreadsheet();
+  var sheet = getOrCreateSheet(ss, CONFIG.SHEET_NILAI, HEADERS_NILAI);
+  var data = sheet.getDataRange().getValues();
+  var records = [];
+  for (var i = 1; i < data.length; i++) {
+    if (data[i][0] && data[i][4]) {
+      records.push({
+        id: "grd-" + i,
+        studentNisn: String(data[i][0]).trim(),
+        studentName: String(data[i][1]).trim(),
+        className: String(data[i][2]).trim(),
+        subject: String(data[i][3]).trim(),
+        materialId: String(data[i][4]).trim(),
+        materialTitle: String(data[i][5]).trim(),
+        ujiPemahaman: Number(data[i][6]) || 0,
+        kuisAkhir: data[i][7] === "-" ? -1 : (Number(data[i][7]) || 0),
+        nilaiAkhir: data[i][8] === "-" ? -1 : (Number(data[i][8]) || 0),
+        predikat: String(data[i][9]).trim(),
+        updatedAt: String(data[i][10] || "")
+      });
+    }
+  }
+  return { success: true, data: records };
+}
+
+// 5. Ambil Gambar Drive sebagai Base64
 function getDriveImageBase64(fileId) {
   try {
     var file = DriveApp.getFileById(fileId);
@@ -181,7 +282,7 @@ function getDriveImageBase64(fileId) {
   }
 }
 
-// 4. Ambil Seluruh Data Siswa (Staff)
+// 6. Ambil Seluruh Data Siswa (Staff)
 function getAllStudents() {
   var ss = getSpreadsheet();
   var sheet = getOrCreateSheet(ss, CONFIG.SHEET_SISWA, ["Nama", "NISN", "Kelas"]);
@@ -200,7 +301,7 @@ function getAllStudents() {
   return { success: true, data: students };
 }
 
-// 5. Tambah Siswa Baru
+// 7. Tambah Siswa Baru
 function addStudentData(student) {
   var ss = getSpreadsheet();
   var sheet = getOrCreateSheet(ss, CONFIG.SHEET_SISWA, ["Nama", "NISN", "Kelas"]);
@@ -208,7 +309,7 @@ function addStudentData(student) {
   return { success: true };
 }
 
-// 6. Perbarui Siswa
+// 8. Perbarui Siswa
 function updateStudentData(student) {
   var ss = getSpreadsheet();
   var sheet = ss.getSheetByName(CONFIG.SHEET_SISWA);
@@ -224,7 +325,7 @@ function updateStudentData(student) {
   return { success: false, error: "Siswa tidak ditemukan" };
 }
 
-// 7. Hapus Siswa
+// 9. Hapus Siswa
 function deleteStudentData(nisn) {
   var ss = getSpreadsheet();
   var sheet = ss.getSheetByName(CONFIG.SHEET_SISWA);
@@ -239,7 +340,7 @@ function deleteStudentData(nisn) {
   return { success: false, error: "Siswa tidak ditemukan" };
 }
 
-// 8. Impor Banyak Siswa
+// 10. Impor Banyak Siswa
 function importStudentsData(students) {
   var ss = getSpreadsheet();
   var sheet = getOrCreateSheet(ss, CONFIG.SHEET_SISWA, ["Nama", "NISN", "Kelas"]);
@@ -250,74 +351,6 @@ function importStudentsData(students) {
   if (rows.length > 0) {
     sheet.getRange(sheet.getLastRow() + 1, 1, rows.length, 3).setValues(rows);
   }
-  return { success: true };
-}
-
-// 9. Ambil Nilai per Kelas dan Mapel
-function getGradesByClassAndSubject(className, subject) {
-  var ss = getSpreadsheet();
-  var sheet = getOrCreateSheet(ss, CONFIG.SHEET_NILAI, ["NISN", "Nama", "Kelas", "Mata Pelajaran", "Tugas", "Kuis", "UTS", "UAS", "Nilai Akhir", "Predikat", "Diperbarui"]);
-  var data = sheet.getDataRange().getValues();
-  var records = [];
-  for (var i = 1; i < data.length; i++) {
-    if (String(data[i][2]).trim() === String(className).trim() && String(data[i][3]).trim() === String(subject).trim()) {
-      records.push({
-        id: "grd-" + i,
-        studentNisn: String(data[i][0]).trim(),
-        studentName: String(data[i][1]).trim(),
-        className: String(data[i][2]).trim(),
-        subject: String(data[i][3]).trim(),
-        tugas: Number(data[i][4]) || 0,
-        kuis: Number(data[i][5]) || 0,
-        uts: Number(data[i][6]) || 0,
-        uas: Number(data[i][7]) || 0,
-        nilaiAkhir: Number(data[i][8]) || 0,
-        predikat: String(data[i][9]).trim(),
-        updatedAt: String(data[i][10] || "")
-      });
-    }
-  }
-  return { success: true, data: records };
-}
-
-// 10. Simpan Rekap Nilai
-function saveGradesData(className, subject, records) {
-  var ss = getSpreadsheet();
-  var sheet = getOrCreateSheet(ss, CONFIG.SHEET_NILAI, ["NISN", "Nama", "Kelas", "Mata Pelajaran", "Tugas", "Kuis", "UTS", "UAS", "Nilai Akhir", "Predikat", "Diperbarui"]);
-  var data = sheet.getDataRange().getValues();
-
-  var map = {};
-  for (var i = 1; i < data.length; i++) {
-    var key = String(data[i][0]).trim() + "___" + String(data[i][3]).trim();
-    map[key] = i + 1; // row number
-  }
-
-  var now = Utilities.formatDate(new Date(), "Asia/Jakarta", "yyyy-MM-dd HH:mm");
-
-  for (var j = 0; j < records.length; j++) {
-    var rec = records[j];
-    var searchKey = String(rec.studentNisn).trim() + "___" + String(subject).trim();
-    var rowData = [
-      "'" + rec.studentNisn,
-      "'" + rec.studentName,
-      "'" + className,
-      "'" + subject,
-      rec.tugas,
-      rec.kuis,
-      rec.uts,
-      rec.uas,
-      rec.nilaiAkhir,
-      rec.predikat,
-      now
-    ];
-
-    if (map[searchKey]) {
-      sheet.getRange(map[searchKey], 1, 1, 11).setValues([rowData]);
-    } else {
-      sheet.appendRow(rowData);
-    }
-  }
-
   return { success: true };
 }
 

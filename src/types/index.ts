@@ -37,10 +37,39 @@ export interface MaterialBlock {
   };
 }
 
+export interface QuizOption {
+  id: string;
+  label: string; // 'A' | 'B' | 'C' | 'D' | 'E'
+  text: string;
+  image?: {
+    source: 'drive' | 'tautan';
+    value: string;
+  };
+}
+
+export interface QuestionItem {
+  id: string;
+  question: string;
+  image?: {
+    source: 'drive' | 'tautan';
+    value: string;
+  };
+  options: QuizOption[];
+  correctOptionId: string;
+  delaySeconds?: number; // for Uji Pemahaman, default 10
+}
+
+export type PageType = 'materi' | 'game' | 'kuis_akhir';
+
 export interface MaterialPage {
   id: string;
-  title: string;
-  blocks: MaterialBlock[];
+  type: PageType;
+  title?: string; // internal identifier if needed
+  blocks?: MaterialBlock[]; // for 'materi'
+  question?: QuestionItem; // for 'materi' (Uji Pemahaman, optional)
+  gameHtml?: string; // for 'game' (complete HTML)
+  quizQuestions?: QuestionItem[]; // for 'kuis_akhir'
+  maxAttempts?: number; // for 'kuis_akhir', 0 or undefined = unlimited
 }
 
 export interface Material {
@@ -59,24 +88,22 @@ export interface GradeRecord {
   studentName: string;
   className: string;
   subject: string;
-  tugas: number;
-  kuis: number;
-  uts: number;
-  uas: number;
-  nilaiAkhir: number;
-  predikat: 'A' | 'B' | 'C' | 'D';
+  materialId: string;
+  materialTitle: string;
+  ujiPemahaman: number; // 0-100
+  kuisAkhir: number; // 0-100, or -1 if none/not done
+  nilaiAkhir: number; // weighted or -1 if waiting
+  predikat: 'A' | 'B' | 'C' | 'D' | '-';
   updatedAt: string;
 }
 
 export interface GradeSettings {
-  bobotTugas: number;
-  bobotKuis: number;
-  bobotUts: number;
-  bobotUas: number;
-  kkm: number;
-  batasA: number;
-  batasB: number;
-  batasC: number;
+  bobotUjiPemahaman: number; // default 30
+  bobotKuisAkhir: number; // default 70
+  kkm: number; // default 75
+  batasA: number; // default 90
+  batasB: number; // default 80
+  batasC: number; // default 70
 }
 
 export interface CmsSettings {
@@ -121,30 +148,48 @@ export interface CmsSettings {
 
   // 4. Sidebar & Menu
   labelRekapNilai: string;
-  sectionTitleMateri: string;
   labelKeluar: string;
+  sectionTitleMateri: string;
   showProfileCard: boolean;
+  showOpenedCheckmark: boolean;
   groupBySubject: boolean;
 
   // 5. Tampilan Materi
-  tabStyle: 'pill' | 'underline';
+  tabStyle: string;
+  tabDefaultBg: string;
+  tabDefaultTextColor: string;
+  tabActiveBg: string;
+  tabActiveTextColor: string;
+  pageMarginX: number; // default 8
   contentFontSize: number;
   maxReadWidth: number;
-  showOpenedCheckmark: boolean;
   emptyMaterialText: string;
 
-  // 6. Rekap Nilai
+  // 6. Uji Pemahaman & Kuis Akhir
+  popupSuccessText: string;
+  popupDuration: number; // default 1.8
+  questionDelaySeconds: number; // default 10
+  btnPrev: string;
+  btnNext: string;
+  btnFinish: string;
+  btnBack: string;
+  btnConfirmFinish: string;
+  confirmUnansweredText: string;
+  quizResultTitle: string;
+  numberUnansweredColor: string;
+  numberAnsweredColor: string;
+
+  // 7. Rekap Nilai
   rekapTitle: string;
   labelColSubject: string;
-  labelColTugas: string;
-  labelColKuis: string;
-  labelColUts: string;
-  labelColUas: string;
-  labelColAkhir: string;
+  labelColMaterial: string;
+  labelColUjiPemahaman: string;
+  labelColKuisAkhir: string;
+  labelColNilaiAkhir: string;
   labelColPredikat: string;
-  labelAvgCard: string;
-  labelTuntasCard: string;
-  labelProgressCard: string;
+  labelCardAvg: string;
+  labelCardTuntas: string;
+  labelCardDikerjakan: string;
   showSummaryCards: boolean;
   showGradeChart: boolean;
   predikatColorA: string;
@@ -152,7 +197,7 @@ export interface CmsSettings {
   predikatColorC: string;
   predikatColorD: string;
 
-  // 7. Teks & Pesan
+  // 8. Teks & Pesan
   msgCountdown: string;
   msgSaved: string;
   msgUploadFailed: string;
@@ -161,10 +206,10 @@ export interface CmsSettings {
   msgPageNotFound: string;
   msgOfflineBadge: string;
 
-  // 8. Fitur
+  // 9. Fitur
   featureSpinLogo: boolean;
-  featureOpenedMark: boolean;
   featureRememberLast: boolean;
+  featureOpenedMark: boolean;
   featureSummaryCards: boolean;
   featureGradeChart: boolean;
 }

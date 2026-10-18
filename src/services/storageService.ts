@@ -19,6 +19,7 @@ import {
   INITIAL_SYNC_SETTINGS,
   INITIAL_ACTIVITY_LOGS,
   INITIAL_ADMIN_PASSWORD_HASH,
+  calculateMaterialGrade,
 } from '../data/initialData';
 
 const STORAGE_KEYS = {
@@ -35,6 +36,9 @@ const STORAGE_KEYS = {
   LAST_VISITED: 'smpn1_last_visited_',
   FAILED_ATTEMPTS: 'smpn1_login_failed_attempts',
   LOCKOUT_TIME: 'smpn1_login_lockout_time',
+  UJI_ATTEMPTS: 'smpn1_uji_',
+  KUIS_ATTEMPTS: 'smpn1_kuis_attempts_',
+  OFFLINE_QUEUE: 'smpn1_offline_grade_queue',
 };
 
 // Safe localStorage access
@@ -90,6 +94,11 @@ export class StorageService {
 
     // Apply CMS theme variables to DOM immediately
     this.applyThemeToDOM(this.cmsSettings);
+
+    // Set up auto retry for queued grades on online
+    window.addEventListener('online', () => {
+      this.processOfflineQueue();
+    });
   }
 
   public static getInstance(): StorageService {
@@ -280,7 +289,7 @@ export class StorageService {
     this.notify();
   }
 
-  // --- Grades ---
+  // --- Grades (Evaluasi Uji Pemahaman & Kuis Akhir) ---
   public getGrades(): GradeRecord[] {
     return [...this.grades];
   }
@@ -289,13 +298,17 @@ export class StorageService {
     return this.grades.filter((g) => g.studentNisn === nisn);
   }
 
+  public getGradesForStudent(nisn: string): GradeRecord[] {
+    return this.getGradesByNisn(nisn);
+  }
+
   public saveGrades(newRecords: GradeRecord[]): void {
     const map = new Map<string, GradeRecord>();
     this.grades.forEach((g) => {
-      map.set(`${g.studentNisn}___${g.subject}`, g);
+      map.set(`${g.studentNisn}___${g.materialId}`, g);
     });
     newRecords.forEach((r) => {
-      map.set(`${r.studentNisn}___${r.subject}`, r);
+      map.set(`${r.studentNisn}___${r.materialId}`, r);
     });
     this.grades = Array.from(map.values());
     setStored(STORAGE_KEYS.GRADES, this.grades);
@@ -312,26 +325,224 @@ export class StorageService {
     setStored(STORAGE_KEYS.GRADE_SETTINGS, this.gradeSettings);
     // Recalculate grades with new settings
     this.grades = this.grades.map((g) => {
-      const sumWeights =
-        settings.bobotTugas + settings.bobotKuis + settings.bobotUts + settings.bobotUas;
-      const weighted =
-        (g.tugas * settings.bobotTugas +
-          g.kuis * settings.bobotKuis +
-          g.uts * settings.bobotUts +
-          g.uas * settings.bobotUas) /
-        (sumWeights || 100);
-      const rounded = Math.round(weighted);
-      let predikat: 'A' | 'B' | 'C' | 'D' = 'D';
-      if (rounded >= settings.batasA) predikat = 'A';
-      else if (rounded >= settings.batasB) predikat = 'B';
-      else if (rounded >= settings.batasC) predikat = 'C';
-      else predikat = 'D';
-
-      return { ...g, nilaiAkhir: rounded, predikat };
+      const mat = this.materials.find((m) => m.id === g.materialId);
+      const hasKuis = mat ? mat.pages.some((p) => p.type === 'kuis_akhir') : g.kuisAkhir >= 0;
+      const { nilaiAkhir, predikat } = calculateMaterialGrade(
+        g.ujiPemahaman,
+        g.kuisAkhir,
+        hasKuis,
+        settings
+      );
+      return { ...g, nilaiAkhir, predikat };
     });
     setStored(STORAGE_KEYS.GRADES, this.grades);
     this.logActivity('Memperbarui pengaturan nilai');
     this.notify();
+  }
+
+  // --- Uji Pemahaman Question State ---
+  public getUjiStatus(
+    studentNisn: string,
+    materialId: string,
+    pageId: string
+  ): { isAnswered: boolean; attempts: number; score: number; selectedOptionId?: string } {
+    const key = `${STORAGE_KEYS.UJI_ATTEMPTS}${studentNisn}_${materialId}_${pageId}`;
+    return getStored(key, { isAnswered: false, attempts: 0, score: 0 });
+  }
+
+  public recordUjiAttempt(
+    studentNisn: string,
+    materialId: string,
+    pageId: string,
+    isCorrect: boolean,
+    selectedOptionId: string
+  ): { isAnswered: boolean; attempts: number; score: number } {
+    const key = `${STORAGE_KEYS.UJI_ATTEMPTS}${studentNisn}_${materialId}_${pageId}`;
+    const curr = getStored(key, { isAnswered: false, attempts: 0, score: 0, selectedOptionId: '' });
+
+    if (curr.isAnswered) {
+      return curr;
+    }
+
+    const newAttempts = curr.attempts + 1;
+    let newScore = 0;
+    if (isCorrect) {
+      newScore = Math.round(100 / newAttempts);
+    }
+
+    const updated = {
+      isAnswered: isCorrect,
+      attempts: newAttempts,
+      score: newScore,
+      selectedOptionId,
+    };
+    setStored(key, updated);
+
+    if (isCorrect) {
+      this.recalculateAndSyncStudentGrade(studentNisn, materialId);
+    }
+
+    return updated;
+  }
+
+  // --- Kuis Akhir Result Record ---
+  public getKuisAttempts(studentNisn: string, materialId: string): number {
+    const key = `${STORAGE_KEYS.KUIS_ATTEMPTS}${studentNisn}_${materialId}`;
+    return getStored(key, 0);
+  }
+
+  public recordKuisAkhirScore(
+    studentNisn: string,
+    materialId: string,
+    score: number
+  ): { finalScore: number; attempts: number } {
+    const key = `${STORAGE_KEYS.KUIS_ATTEMPTS}${studentNisn}_${materialId}`;
+    const currentAttempts = getStored(key, 0) + 1;
+    setStored(key, currentAttempts);
+
+    this.recalculateAndSyncStudentGrade(studentNisn, materialId, score);
+    return { finalScore: score, attempts: currentAttempts };
+  }
+
+  // Recalculates student's GradeRecord for this material and syncs to Apps Script
+  private recalculateAndSyncStudentGrade(studentNisn: string, materialId: string, newKuisScore?: number) {
+    const mat = this.materials.find((m) => m.id === materialId);
+    if (!mat) return;
+    const student = this.students.find((s) => s.nisn === studentNisn);
+    if (!student) return;
+
+    // Calculate Uji Pemahaman average across all pages with questions
+    const pagesWithQuestion = mat.pages.filter((p) => p.type === 'materi' && p.question);
+    let totalUjiScore = 0;
+    let answeredCount = 0;
+
+    pagesWithQuestion.forEach((p) => {
+      const status = this.getUjiStatus(studentNisn, materialId, p.id);
+      if (status.isAnswered) {
+        totalUjiScore += status.score;
+        answeredCount++;
+      }
+    });
+
+    const avgUji = answeredCount > 0 ? Math.round(totalUjiScore / pagesWithQuestion.length) : -1;
+
+    // Check existing record to keep highest score
+    const existingIdx = this.grades.findIndex(
+      (g) => g.studentNisn === studentNisn && g.materialId === materialId
+    );
+    const existing = existingIdx >= 0 ? this.grades[existingIdx] : null;
+
+    let kuisScore = existing ? existing.kuisAkhir : -1;
+    if (newKuisScore !== undefined) {
+      kuisScore = Math.max(kuisScore, newKuisScore);
+    }
+
+    const ujiToUse = existing ? Math.max(existing.ujiPemahaman, avgUji) : avgUji;
+    const hasKuis = mat.pages.some((p) => p.type === 'kuis_akhir');
+
+    const { nilaiAkhir, predikat } = calculateMaterialGrade(
+      ujiToUse >= 0 ? ujiToUse : 0,
+      kuisScore,
+      hasKuis,
+      this.gradeSettings
+    );
+
+    const updatedRecord: GradeRecord = {
+      id: existing ? existing.id : `grd-${studentNisn}-${materialId}`,
+      studentNisn,
+      studentName: student.name,
+      className: student.className,
+      subject: mat.subject,
+      materialId: mat.id,
+      materialTitle: mat.title,
+      ujiPemahaman: ujiToUse,
+      kuisAkhir: kuisScore,
+      nilaiAkhir,
+      predikat,
+      updatedAt: new Date().toLocaleDateString('id-ID', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+      }),
+    };
+
+    if (existingIdx >= 0) {
+      this.grades[existingIdx] = updatedRecord;
+    } else {
+      this.grades.push(updatedRecord);
+    }
+    setStored(STORAGE_KEYS.GRADES, this.grades);
+    this.notify();
+
+    // Auto send to spreadsheet
+    this.sendGradeToAppsScript(updatedRecord);
+  }
+
+  // Auto sync grade to Apps Script with offline queue
+  public async sendGradeToAppsScript(record: GradeRecord): Promise<void> {
+    const sync = this.getSyncSettings();
+    if (!sync.webAppUrl || !navigator.onLine) {
+      this.queueOfflineGrade(record);
+      return;
+    }
+
+    try {
+      const resp = await fetch(sync.webAppUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({
+          action: 'saveStudentGrade',
+          record,
+        }),
+      });
+      const res = await resp.json();
+      if (!res || !res.success) {
+        this.queueOfflineGrade(record);
+      }
+    } catch {
+      this.queueOfflineGrade(record);
+    }
+  }
+
+  private queueOfflineGrade(record: GradeRecord): void {
+    const queue = getStored<GradeRecord[]>(STORAGE_KEYS.OFFLINE_QUEUE, []);
+    const idx = queue.findIndex(
+      (r) => r.studentNisn === record.studentNisn && r.materialId === record.materialId
+    );
+    if (idx >= 0) {
+      queue[idx] = record;
+    } else {
+      queue.push(record);
+    }
+    setStored(STORAGE_KEYS.OFFLINE_QUEUE, queue);
+  }
+
+  private async processOfflineQueue(): Promise<void> {
+    const queue = getStored<GradeRecord[]>(STORAGE_KEYS.OFFLINE_QUEUE, []);
+    if (queue.length === 0) return;
+
+    const sync = this.getSyncSettings();
+    if (!sync.webAppUrl || !navigator.onLine) return;
+
+    const remaining: GradeRecord[] = [];
+    for (const record of queue) {
+      try {
+        const resp = await fetch(sync.webAppUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+          body: JSON.stringify({ action: 'saveStudentGrade', record }),
+        });
+        const res = await resp.json();
+        if (!res || !res.success) {
+          remaining.push(record);
+        }
+      } catch {
+        remaining.push(record);
+      }
+    }
+    setStored(STORAGE_KEYS.OFFLINE_QUEUE, remaining);
   }
 
   // --- CMS Settings ---
@@ -424,7 +635,6 @@ export class StorageService {
   public async verifyNisnWithAppsScript(nisn: string): Promise<{ success: boolean; data?: Student; error?: string }> {
     const sync = this.getSyncSettings();
     if (!sync.webAppUrl || sync.lastConnectedStatus !== 'Terhubung') {
-      // Fallback to local data
       const found = this.students.find((s) => s.nisn === nisn.trim());
       if (found) return { success: true, data: found };
       return { success: false, error: 'NISN tidak terdaftar' };
@@ -439,7 +649,6 @@ export class StorageService {
       const json = await resp.json();
       return json;
     } catch {
-      // Offline fallback to local students
       const found = this.students.find((s) => s.nisn === nisn.trim());
       if (found) return { success: true, data: found };
       return { success: false, error: 'Koneksi gagal' };
@@ -462,7 +671,7 @@ export class StorageService {
         return json.data;
       }
     } catch {
-      // Return local grades if network fails
+      // Fallback
     }
     return this.getGradesByNisn(nisn);
   }
