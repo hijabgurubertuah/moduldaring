@@ -2,11 +2,15 @@
 
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 
-interface MobileSidebarDrawerProps {
+export interface MobileSidebarDrawerProps {
   isOpen: boolean;
   onClose: () => void;
   onOpen: () => void;
   children: React.ReactNode;
+  icon?: 'dashboard' | 'hamburger';
+  position?: 'center' | 'upper' | 'lower';
+  ariaLabel?: string;
+  drawerTitle?: string;
 }
 
 export const MobileSidebarDrawer: React.FC<MobileSidebarDrawerProps> = ({
@@ -14,6 +18,10 @@ export const MobileSidebarDrawer: React.FC<MobileSidebarDrawerProps> = ({
   onClose,
   onOpen,
   children,
+  icon = 'hamburger',
+  position = 'center',
+  ariaLabel = 'Buka menu',
+  drawerTitle = 'Menu Navigasi',
 }) => {
   const triggerRef = useRef<HTMLButtonElement>(null);
   const drawerRef = useRef<HTMLDivElement>(null);
@@ -123,6 +131,14 @@ export const MobileSidebarDrawer: React.FC<MobileSidebarDrawerProps> = ({
     }
   }
 
+  // Top position calculation
+  let topPosition = '50%';
+  if (position === 'upper') {
+    topPosition = 'calc(50% - 66px)';
+  } else if (position === 'lower') {
+    topPosition = 'calc(50% + 66px)';
+  }
+
   return (
     <>
       {/* --- TOMBOL PEGANGAN SIDEBAR HP (25px x 120px, HAMPIR TRANSPARAN) --- */}
@@ -130,9 +146,9 @@ export const MobileSidebarDrawer: React.FC<MobileSidebarDrawerProps> = ({
         ref={triggerRef}
         type="button"
         onClick={onOpen}
-        aria-label="Buka menu"
+        aria-label={ariaLabel}
         aria-expanded={isOpen}
-        className={`md:hidden fixed top-1/2 -translate-y-1/2 z-30 select-none cursor-pointer focus:outline-none focus-visible:ring-1 focus-visible:ring-[#2DD4BF] ${
+        className={`md:hidden fixed z-30 select-none cursor-pointer focus:outline-none focus-visible:ring-1 focus-visible:ring-[#2DD4BF] ${
           isOpen
             ? '-translate-x-full opacity-0 pointer-events-none'
             : 'translate-x-0 opacity-100 pointer-events-auto'
@@ -140,6 +156,8 @@ export const MobileSidebarDrawer: React.FC<MobileSidebarDrawerProps> = ({
           prefersReducedMotion ? 'duration-150' : 'duration-300'
         } ease-[cubic-bezier(0.4,0,0.2,1)]`}
         style={{
+          top: topPosition,
+          transform: 'translateY(-50%)',
           left: 'env(safe-area-inset-left, 0px)',
           width: '25px', // Exact display size
           height: '120px',
@@ -149,12 +167,21 @@ export const MobileSidebarDrawer: React.FC<MobileSidebarDrawerProps> = ({
           {/* Top vertical accent line (22px, 2px, #2DD4BF ~50% opacity) */}
           <div className="w-[2px] h-[22px] bg-[#2DD4BF]/50 rounded-full shrink-0" />
 
-          {/* Middle 3-line hamburger icon (14px, #ECFEFF ~50% opacity) */}
-          <div className="w-[14px] flex flex-col justify-center items-center gap-[3px] py-1 opacity-50">
-            <span className="w-[14px] h-[2px] bg-[#ECFEFF] rounded-full block" />
-            <span className="w-[14px] h-[2px] bg-[#ECFEFF] rounded-full block" />
-            <span className="w-[14px] h-[2px] bg-[#ECFEFF] rounded-full block" />
-          </div>
+          {/* Middle Icon: Dashboard (4-square grid) or Hamburger (3 lines) */}
+          {icon === 'dashboard' ? (
+            <div className="w-[14px] h-[14px] grid grid-cols-2 gap-[2px] opacity-50 p-[1px]">
+              <span className="bg-[#ECFEFF] rounded-[1.5px]" />
+              <span className="bg-[#ECFEFF] rounded-[1.5px]" />
+              <span className="bg-[#ECFEFF] rounded-[1.5px]" />
+              <span className="bg-[#ECFEFF] rounded-[1.5px]" />
+            </div>
+          ) : (
+            <div className="w-[14px] flex flex-col justify-center items-center gap-[3px] py-1 opacity-50">
+              <span className="w-[14px] h-[2px] bg-[#ECFEFF] rounded-full block" />
+              <span className="w-[14px] h-[2px] bg-[#ECFEFF] rounded-full block" />
+              <span className="w-[14px] h-[2px] bg-[#ECFEFF] rounded-full block" />
+            </div>
+          )}
 
           {/* Bottom vertical accent line (22px, 2px, #2DD4BF ~50% opacity) */}
           <div className="w-[2px] h-[22px] bg-[#2DD4BF]/50 rounded-full shrink-0" />
@@ -177,7 +204,7 @@ export const MobileSidebarDrawer: React.FC<MobileSidebarDrawerProps> = ({
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
-        className={`md:hidden fixed top-0 left-0 z-40 h-screen w-[72vw] max-w-[280px] bg-[#0F766E]/50 backdrop-blur-[var(--glass-blur,18px)] border-r border-white/15 flex flex-col justify-between p-3.5 shadow-2xl`}
+        className="md:hidden fixed top-0 left-0 z-40 h-screen w-[72vw] max-w-[280px] bg-[#0F766E]/50 backdrop-blur-[var(--glass-blur,18px)] border-r border-white/15 flex flex-col justify-between p-3.5 shadow-2xl"
         style={{
           transform: drawerTransform,
           transition: drawerTransition,
@@ -186,7 +213,7 @@ export const MobileSidebarDrawer: React.FC<MobileSidebarDrawerProps> = ({
         }}
         role="dialog"
         aria-modal="true"
-        aria-label="Menu Navigasi"
+        aria-label={drawerTitle}
       >
         <div className="flex flex-col h-full overflow-y-auto no-scrollbar">
           {children}

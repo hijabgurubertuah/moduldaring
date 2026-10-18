@@ -7,6 +7,7 @@ import { StorageService } from '../../services/storageService';
 import { GlassCard } from '../common/GlassCard';
 import { GlassButton } from '../common/GlassButton';
 import { GlassInput } from '../common/GlassInput';
+import { GlassSelect } from '../common/GlassSelect';
 import { ImageUploader } from '../common/ImageUploader';
 import { LoginScreen } from '../auth/LoginScreen';
 
@@ -392,17 +393,16 @@ export const AdminCms: React.FC<AdminCmsProps> = ({ cms, onShowToast }) => {
         {/* 5. Tampilan Materi */}
         {activeTab === 'Tampilan Materi' && (
           <div className="flex flex-col gap-5 max-w-2xl">
-            <div className="flex flex-col gap-1.5">
-              <label className="text-sm font-medium text-[#ECFEFF]">Gaya Tab Halaman</label>
-              <select
-                value={draftCms.tabStyle}
-                onChange={(e) => handleFieldChange('tabStyle', e.target.value as any)}
-                className="min-h-[44px] px-3.5 py-2 text-sm bg-[#0B4F4A] border border-white/20 rounded-xl text-[#ECFEFF] cursor-pointer"
-              >
-                <option value="pill">Pil Beraksen</option>
-                <option value="underline">Garis Bawah</option>
-              </select>
-            </div>
+            <GlassSelect
+              label="Gaya Tab Halaman"
+              value={draftCms.tabStyle}
+              onChange={(val) => handleFieldChange('tabStyle', val as any)}
+              options={[
+                { value: 'pill', label: 'Pil Beraksen' },
+                { value: 'underline', label: 'Garis Bawah' },
+              ]}
+              ariaLabel="Gaya Tab Halaman"
+            />
 
             <div className="flex flex-col gap-1.5">
               <label className="text-sm font-medium text-[#ECFEFF]">

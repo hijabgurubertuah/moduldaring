@@ -7,6 +7,7 @@ import { StorageService } from '../../services/storageService';
 import { GlassCard } from '../common/GlassCard';
 import { GlassButton } from '../common/GlassButton';
 import { GlassInput } from '../common/GlassInput';
+import { GlassSelect } from '../common/GlassSelect';
 import { ConfirmDialog } from '../common/ConfirmDialog';
 
 interface AdminStudentsProps {
@@ -270,22 +271,19 @@ export const AdminStudents: React.FC<AdminStudentsProps> = ({ onShowToast }) => 
           />
         </div>
 
-        <div className="flex items-center gap-2">
-          <select
+        <div className="w-full sm:w-48">
+          <GlassSelect
             value={selectedClass}
-            onChange={(e) => {
-              setSelectedClass(e.target.value);
+            onChange={(val) => {
+              setSelectedClass(val);
               setPage(1);
             }}
-            className="min-h-[44px] px-3.5 py-2 text-sm bg-[#0B4F4A] border border-white/20 rounded-xl text-[#ECFEFF] focus:outline-none focus:border-[#2DD4BF] cursor-pointer"
-          >
-            <option value="Semua">Semua Kelas</option>
-            {classes.map((c) => (
-              <option key={c} value={c}>
-                {c}
-              </option>
-            ))}
-          </select>
+            options={['Semua', ...classes].map((c) => ({
+              value: c,
+              label: c === 'Semua' ? 'Semua Kelas' : c,
+            }))}
+            ariaLabel="Filter Kelas"
+          />
         </div>
       </GlassCard>
 

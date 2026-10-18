@@ -7,6 +7,7 @@ import { StorageService } from '../../services/storageService';
 import { calculateMaterialGrade } from '../../data/initialData';
 import { GlassCard } from '../common/GlassCard';
 import { GlassButton } from '../common/GlassButton';
+import { GlassSelect } from '../common/GlassSelect';
 
 interface AdminGradesProps {
   onShowToast: (msg: string, type?: 'success' | 'error') => void;
@@ -299,34 +300,31 @@ export const AdminGrades: React.FC<AdminGradesProps> = ({ onShowToast }) => {
 
       {/* Class and Material Selectors */}
       <GlassCard className="no-print p-4 flex flex-col sm:flex-row items-stretch sm:items-center gap-4">
-        <div className="flex items-center gap-2 flex-1">
+        <div className="flex items-center gap-2 flex-1 min-w-[200px]">
           <label className="text-xs text-[#A5D8D3] font-medium shrink-0">Kelas:</label>
-          <select
-            value={selectedClass}
-            onChange={(e) => setSelectedClass(e.target.value)}
-            className="w-full min-h-[44px] px-3.5 py-2 text-sm bg-[#0B4F4A] border border-white/20 rounded-xl text-[#ECFEFF] focus:outline-none focus:border-[#2DD4BF] cursor-pointer"
-          >
-            {classes.map((c) => (
-              <option key={c} value={c}>
-                {c}
-              </option>
-            ))}
-          </select>
+          <div className="flex-1">
+            <GlassSelect
+              value={selectedClass}
+              onChange={setSelectedClass}
+              options={classes}
+              ariaLabel="Pilih Kelas"
+            />
+          </div>
         </div>
 
-        <div className="flex items-center gap-2 flex-1">
+        <div className="flex items-center gap-2 flex-1 min-w-[240px]">
           <label className="text-xs text-[#A5D8D3] font-medium shrink-0">Materi:</label>
-          <select
-            value={selectedMaterialId}
-            onChange={(e) => setSelectedMaterialId(e.target.value)}
-            className="w-full min-h-[44px] px-3.5 py-2 text-sm bg-[#0B4F4A] border border-white/20 rounded-xl text-[#ECFEFF] focus:outline-none focus:border-[#2DD4BF] cursor-pointer"
-          >
-            {classMaterials.map((m) => (
-              <option key={m.id} value={m.id}>
-                {m.subject} — {m.title}
-              </option>
-            ))}
-          </select>
+          <div className="flex-1">
+            <GlassSelect
+              value={selectedMaterialId}
+              onChange={setSelectedMaterialId}
+              options={classMaterials.map((m) => ({
+                value: m.id,
+                label: `${m.subject} — ${m.title}`,
+              }))}
+              ariaLabel="Pilih Materi"
+            />
+          </div>
         </div>
       </GlassCard>
 

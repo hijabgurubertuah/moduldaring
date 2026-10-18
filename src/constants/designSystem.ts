@@ -27,12 +27,22 @@
  * 4. ATURAN MOBILE (HP) PRIORITAS UTAMA:
  *    - Layar 360px - 430px harus rapi, proporsional, mudah dioperasikan dengan satu jari.
  *    - ATURAN PERMANEN HEADER: Header HP di Ruang Belajar Siswa DIHAPUS TOTAL. Header HP di Panel Admin tetap ada (hanya logo dan nama singkat tanpa tombol).
- *    - ATURAN PERMANEN TOMBOL SIDEBAR: Di tampilan HP, sidebar dibuka dengan tombol pegangan di tepi kiri tengah layar berukuran 25px x 120px, hampir transparan (rgba(15,118,110,0.12), blur ringan, opasitas garis/ikon ~50%, disentuh ~85%), area sentuh sama dengan ukuran tampil (25px x 120px). Tombol DIABAIKAN dalam penentuan tata letak (tidak ada jarak kiri tambahan pada isi).
+ *    - ATURAN PERMANEN TOMBOL SIDEBAR:
+ *      * Tombol sidebar Panel Admin memakai IKON DASBOR (bukan hamburger). Hamburger hanya untuk sidebar materi (di tampilan siswa dan di layar Materi admin).
+ *      * Di tampilan HP, sidebar dibuka dengan tombol pegangan di tepi kiri layar berukuran 25px x 120px, hampir transparan (rgba(15,118,110,0.12), blur ringan, opasitas garis/ikon ~50%, disentuh ~85%), area sentuh sama dengan ukuran tampil (25px x 120px). Tombol DIABAIKAN dalam penentuan tata letak (tidak ada jarak kiri tambahan pada isi).
+ *    - ATURAN PERMANEN LAYAR MATERI PANEL ADMIN:
+ *      * Layar Materi di Panel Admin menjadi tampilan penuh yang SAMA PERSIS dengan tampilan materi siswa, dengan DUA tombol sidebar di tampilan HP:
+ *        1) Tombol sidebar Panel Admin (ikon dasbor di posisi upper) untuk membuka menu admin.
+ *        2) Tombol sidebar Materi (ikon hamburger di posisi lower) untuk membuka daftar navigasi materi.
+ *      * Menggantikan susunan editor lama (daftar tabel terpisah atau split form).
+ *    - ATURAN PERMANEN KOLOM PILIHAN (DROPDOWN TANPA POPUP):
+ *      * Semua kolom pilihan (dropdown) di seluruh aplikasi tidak lagi berupa popup, dialog, lembar bawah (bottom sheet), atau pilihan bawaan browser (select / datalist).
+ *      * Daftar pilihan terbuka menempel langsung pada kolom yang diketuk, dengan arah buka cerdas (ke bawah bila cukup ruang, ke atas bila sempit).
+ *      * Lebar daftar sama dengan lebar kolom, tinggi maksimal s/d 240px dengan scroll mandiri (overscroll contain) dan tinggi item 44px.
  *    - Jarak tepi kiri dan kanan kartu isi dan baris tab tipis: sekitar 8px di HP. Padding dalam kartu isi sekitar 14px.
- *    - TAB HALAMAN ANGKA: Tab halaman hanya berupa angka (1, 2, 3...) tanpa judul, rata tengah, tidak pernah digeser mendatar (turun ke baris baru jika banyak). Tab aktif lebih lebar (~1.6x) dan toska lebih terang. Jarak tab ke kartu isi dekat (~6px).
+ *    - TAB HALAMAN ANGKA: Tab halaman hanya berupa angka (1, 2, 3...) tanpa judul, rata tengah, tidak pernah digeser mendatar. Tab aktif lebih lebar (~1.6x) dan toska lebih terang.
  *    - JENIS HALAMAN: Materi (dengan Uji Pemahaman opsional di bawah, tanpa tombol), Game (HTML responsif terisolasi ~75% viewport), dan Kuis Akhir (CBT dengan tombol Mundur, Lanjut/Selesai, dan grid 6 kolom nomor soal).
  *    - PENILAIAN OTOMATIS: Nilai dihitung otomatis per materi dari Uji Pemahaman dan Kuis Akhir, lalu direkap otomatis ke spreadsheet tab "Rekap Nilai".
- *    - EDITOR MATERI ADMIN: Menggunakan antarmuka yang identik dengan tampilan siswa, dengan toolbar kontrol di atas bingkai dan tombol Simpan Perubahan per halaman di dasar bingkai.
  */
 
 export const DESIGN_RULES = {

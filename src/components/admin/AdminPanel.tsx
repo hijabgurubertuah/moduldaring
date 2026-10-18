@@ -182,11 +182,15 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ cms, onLogout, onShowToa
         </div>
       </header>
 
-      {/* MOBILE SIDEBAR DRAWER DENGAN TOMBOL PEGANGAN DI KIRI TENGAH LAYAR */}
+      {/* MOBILE SIDEBAR DRAWER PANEL ADMIN (Ikon Dasbor, posisi upper saat di menu Materi) */}
       <MobileSidebarDrawer
         isOpen={mobileMenuOpen}
         onOpen={() => setMobileMenuOpen(true)}
         onClose={() => setMobileMenuOpen(false)}
+        icon="dashboard"
+        position={activeMenu === 'Materi' ? 'upper' : 'center'}
+        ariaLabel="Buka menu admin"
+        drawerTitle="Menu Admin"
       >
         {renderSidebarContent()}
       </MobileSidebarDrawer>
@@ -196,8 +200,12 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ cms, onLogout, onShowToa
         {renderSidebarContent()}
       </aside>
 
-      {/* MAIN CONTENT AREA (Di HP diberi jarak kiri 38px agar tidak tertutup tombol pegangan) */}
-      <main className="flex-1 pl-[38px] pr-4 py-4 sm:p-6 md:p-8 overflow-y-auto">
+      {/* MAIN CONTENT AREA (Tanpa padding kiri 38px, simetris dan proporsional; full-bleed untuk Materi) */}
+      <main
+        className={`flex-1 overflow-y-auto ${
+          activeMenu === 'Materi' ? 'p-0' : 'px-4 py-4 sm:p-6 md:p-8'
+        }`}
+      >
         {activeMenu === 'Dasbor' && <AdminDashboard />}
         {activeMenu === 'Siswa' && <AdminStudents onShowToast={onShowToast} />}
         {activeMenu === 'Materi' && <AdminMaterials cms={cms} onShowToast={onShowToast} />}
